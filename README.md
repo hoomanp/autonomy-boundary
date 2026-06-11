@@ -24,7 +24,7 @@ This implementation closes it structurally. The agent emits a single signed inte
 | Continuous | **Observability** | every decision is recorded as it happens, not reconstructed |
 | Continuous | **Provability** | a hash-chained ledger that must verify before new actions land |
 
-Each control is a small module under `src/abf/controls/`. The orchestrator (`src/abf/boundary.py`) runs them in lifecycle order; any denial or any exception halts execution.
+The full framework write-up, including the lifecycle phasing and what ABF deliberately excludes, is in [docs/framework.md](docs/framework.md). Each control is a small module under `src/abf/controls/`. The orchestrator (`src/abf/boundary.py`) runs them in lifecycle order; any denial or any exception halts execution.
 
 ## Quickstart
 
