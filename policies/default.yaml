@@ -1,0 +1,13 @@
+# Example boundary policy for a customer-operations agent.
+scope:
+  allowed_resources:
+    - "acct/*"
+    - "ticket/*"
+authority:
+  allowed_actions:
+    - "refund.issue"
+    - "ticket.close"
+    - "account.note"
+reversibility:
+  irreversible_actions:
+    - "refund.issue"
