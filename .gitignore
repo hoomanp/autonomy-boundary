@@ -8,3 +8,7 @@ dist/
 build/
 *.log
 ledger.jsonl
+
+# Local tooling / editor state (never publish)
+.claude/
+*.zip
