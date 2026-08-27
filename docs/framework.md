@@ -40,6 +40,14 @@ A record only counts if three facts are bound together **at the moment of action
 
 Observability produces that record; Provability holds it in a **different trust domain** from both the agent runtime and the enforcement point. The enforcement point is the only component that sees the full binding at the moment of action, so it must emit the evidence — and must not be the custodian. In the reference, instance identity is a signed software assertion. A hardware root of trust (TEE, silicon identity) is the production upgrade that makes the instance claim unforgeable; it is not a property of this kernel.
 
+### Context, memory, and KV cache
+
+These are not a ninth control. Provider prompt caches, conversation checkpointers, and application memory stores are **inputs and effects** the eight controls already govern.
+
+A retrieved chunk, a session note, or a warm cache prefix is an input: Input Integrity screens it before it can shape an action, and State Admissibility re-hashes decision-critical memory (including a `memory_fingerprint`) before a high-risk effect. A memory write, a KV put, or reuse of a `session_id` is an effect: Scope names what it may touch, Authority allowlists the verb and spends `chain_budget`, Reversibility classifies it, Legibility binds the signed intent, Observability records cache hits (`cached_tokens`, `cache_discount`), and Provability binds the session as the software instance claim.
+
+Implicit provider KV cache is not application data retention. OpenRouter's zero-data-retention stance applies to that cache; ABF still treats **application** memory and KV as governed state. A harness such as LangChain or `callModel` may propose the write. The boundary still authorizes it. Optional wrappers live under [`examples/harnesses/`](../examples/harnesses/).
+
 ## Accountability
 
 The boundary's placement is a leadership decision, not a model property. Which actions are irreversible, what falls in scope, what appears on the allowlist, which dependencies an action class must bind — these are choices a named owner makes and reviews, and the framework's records exist so that owner can defend them in an audit. An agent operating without a defined boundary is not autonomous; it is unowned.

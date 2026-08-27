@@ -40,11 +40,15 @@ class AutonomyBoundary:
             if not result.allowed:
                 decision.allowed = False
                 break
+        approval = context.get("approval") or {}
         self.ledger.append(
             "boundary_decision",
             {
                 "intent_hash": intent.hash,
                 "allowed": decision.allowed,
+                "approved_hash": approval.get("approved_hash"),
+                "in_force_grant": context.get("in_force_grant"),
+                "instance_id": context.get("instance_id") or intent.effective_identity,
                 "results": [
                     {"control": r.control, "allowed": r.allowed, "reason": r.reason}
                     for r in decision.results

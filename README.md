@@ -82,6 +82,13 @@ python evals/owasp_asi_coverage.py     # adversarial scenarios → control matri
 
 The refund example approves a $250 refund, executes it, then attempts a $25,000 intent against the same approval token. Legibility denies it: the approved hash and the executing hash differ. It then freezes the account under the same approval. State Admissibility denies it.
 
+Optional SDK harnesses (LangChain, Anthropic, OpenAI, Gemini, OpenRouter Python, and a small TypeScript Agent SDK demo) wrap the same PEP. They are not a ninth control: memory, KV, and prompt-cache sessions are effects the eight already govern. Fake-model by default; `--live` needs extras and API keys. See [`examples/harnesses/README.md`](examples/harnesses/README.md).
+
+```bash
+pip install -e ".[harness]"          # optional; not required for pytest
+python examples/harnesses/openrouter_refund.py
+```
+
 - Each control is a module under `src/abf/controls/`.
 - The orchestrator (`src/abf/boundary.py`) runs them in lifecycle order.
 - `Intent` (`src/abf/intent.py`) serializes canonically so its hash is stable across the approval surface and the executor. The hash binds the post-resolution effect and the state snapshot. The reference uses HMAC-SHA256 to keep dependencies minimal; production should use Ed25519. The binding logic is identical.
@@ -112,6 +119,7 @@ Field reports from regulated deployments are welcome. Open an issue.
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) — adversaries, control mapping, trust assumptions, and explicit non-goals.
 - `demo/` — runnable controls, no dependencies.
 - `src/abf/` — reference implementation.
+- [`examples/harnesses/`](examples/harnesses/) — optional SDK wrappers; ABF remains the PEP.
 
 ## Author
 

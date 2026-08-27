@@ -1,0 +1,31 @@
+# Customer-operations agent with memory and KV as governed effects.
+scope:
+  allowed_resources:
+    - "acct/*"
+    - "ticket/*"
+    - "memory/*"
+    - "kv/acct/*"
+authority:
+  allowed_actions:
+    - "refund.issue"
+    - "ticket.close"
+    - "account.note"
+    - "memory.write"
+    - "kv.get"
+    - "kv.put"
+  capability_envelope:
+    - read
+    - write
+    - refund
+  chain_budget: 8
+reversibility:
+  irreversible_actions:
+    - "refund.issue"
+state_admissibility:
+  required_deps:
+    refund.issue:
+      - account_status
+      - refund_policy
+      - memory_fingerprint
+  high_risk_actions:
+    - refund.issue
