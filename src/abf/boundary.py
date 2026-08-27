@@ -1,6 +1,6 @@
 """The Autonomy Boundary orchestrator.
 
-Runs the seven controls in lifecycle order against a signed intent. Any
+Runs the eight controls in lifecycle order against a signed intent. Any
 deny, or any control exception, halts execution: the boundary fails closed.
 """
 from __future__ import annotations

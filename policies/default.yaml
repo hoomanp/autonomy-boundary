@@ -8,6 +8,18 @@ authority:
     - "refund.issue"
     - "ticket.close"
     - "account.note"
+  capability_envelope:
+    - read
+    - write
+    - refund
+  chain_budget: 8
 reversibility:
   irreversible_actions:
     - "refund.issue"
+state_admissibility:
+  required_deps:
+    refund.issue:
+      - account_status
+      - refund_policy
+  high_risk_actions:
+    - refund.issue

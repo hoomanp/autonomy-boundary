@@ -5,7 +5,8 @@ import pytest
 from abf import AutonomyBoundary, Intent, Ledger
 from abf.controls import (
     AuthorityControl, InputIntegrityControl, LegibilityControl,
-    ObservabilityControl, ProvabilityControl, ReversibilityControl, ScopeControl,
+    ObservabilityControl, ProvabilityControl, ReversibilityControl,
+    ScopeControl, StateAdmissibilityControl,
 )
 from abf.controls.legibility import approve
 
@@ -20,6 +21,7 @@ def make_boundary(tmp_path):
         InputIntegrityControl(),
         ReversibilityControl(["refund.issue"]),
         LegibilityControl(),
+        StateAdmissibilityControl(),
         ObservabilityControl(ledger),
         ProvabilityControl(ledger),
     ]

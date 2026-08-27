@@ -15,11 +15,12 @@ class ScopeControl(Control):
         self.allowed_resources = allowed_resources
 
     def check(self, intent: Intent, context: dict[str, Any]) -> ControlResult:
+        target = intent.effect_target
         for pattern in self.allowed_resources:
-            if fnmatch(intent.resource, pattern):
+            if fnmatch(target, pattern):
                 return self.allow(f"resource matches scope pattern '{pattern}'")
         return self.deny(
             "resource outside declared scope",
-            resource=intent.resource,
+            resource=target,
             scope=self.allowed_resources,
         )
