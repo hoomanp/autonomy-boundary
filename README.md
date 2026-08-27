@@ -127,6 +127,8 @@ Field reports from regulated deployments are welcome. Open an issue.
 
 25+ years securing cloud platforms at Fortune-100 scale. Companion essays: *The Autonomy Boundary* series and *The Last Mile* (finance, healthcare, retail, and government), on LinkedIn.
 
+This repository is the canonical home for the framework — docs, demos, reference implementation, and design discussion via [issues](https://github.com/hoomanp/autonomy-boundary/issues). There is no separate hosted site.
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
