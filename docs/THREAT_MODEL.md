@@ -36,6 +36,7 @@ Components:
 | A5 | **Post-hoc record tampering** | An insider or attacker (including a compromised operator) edits history to change what "happened." |
 | A6 | **Composition attacker** | Individually-approved actions chained into an aggregate effect nobody approved (confused deputy). |
 | A7 | **Stale or omitted eligibility state** | The approval is valid; the world that made the action eligible has moved, or a required dependency was never bound. |
+| A8 | **Self-investigating proof** | The agent runtime or the enforcement point is also the custodian of the record. Post-incident, the proof is a report written by the thing under investigation. Instance identity is a copyable software claim. |
 
 ## 3. Control ↔ threat mapping
 
@@ -47,8 +48,8 @@ Components:
 | Reversibility | A4 | Irreversible actions classified and gated on human sign-off; everything else undoable. |
 | **Legibility** | **A2, A3** | Approval binds to a canonical hash of the **post-resolution semantic effect** (resolved target, effective identity, capability set, data boundary, expiry). Enforcement recomputes at the last point after resolution, immediately before effect. Execution-time divergence fails closed. |
 | **State Admissibility** | **A7** | Policy-declared decision-critical dependencies hashed into the intent plus a validity window. High-risk actions require both a live window and a matching re-hash; neither substitutes for the other. Agent may add deps, must not omit the minimum set. |
-| Observability | A4, A6 | Full decision traces: inputs, versions, choices, outcomes — enough to reconstruct, not just to count. |
-| Provability | A5 | Hash-chained, append-only ledger; each entry commits to its predecessor; altering any entry breaks every link downstream. |
+| Observability | A4, A6 | Full decision traces: inputs, versions, choices, outcomes — enough to reconstruct, not just to count. A check that emits no record did not happen. |
+| **Provability** | **A5, A8** | Hash-chained, append-only ledger. Each entry at the moment of action binds the **triple**: approved intent hash, in-force grant, instance identity. Custody sits outside both the agent and the enforcement point. Altering any entry breaks every link downstream. |
 
 ## 4. Trust assumptions — stated, not hidden
 
@@ -65,10 +66,12 @@ Components:
 3. **Canonicalization is correct.** Intent binding is only as strong as the
    canonical serialization and the resolution step. Bugs here are control
    bypasses; this code path deserves adversarial review above all others.
-4. **Instance identity is an assertion in pure software.** "Which instance of
-   the agent acted" ultimately rests on the runtime's own claim unless rooted
-   in hardware attestation (e.g., TEE-based). The framework records the claim;
-   hardening it is an open collaboration area.
+4. **Instance identity is an assertion in pure software unless attested.**
+   "Which instance of the agent acted" is bound into the ledger row as a
+   signed claim. In the reference that claim is software. A hardware root of
+   trust (TEE, silicon identity) can replace the claim without changing the
+   record schema. Until it does, a copied credential can impersonate an
+   instance (issue [#3](https://github.com/hoomanp/autonomy-boundary/issues/3)).
 5. **The caller reports chain spend honestly.** Authority budgets compose
    across parallel chains only if the orchestrator accumulates `task_spend`
    on a shared counter. The control cannot see siblings it was not told about.
@@ -85,6 +88,13 @@ Components:
 - **Resolution classes still uncovered (issue #2).** The reference
   canonicalizer covers env expansion, aliasing, POSIX normalize, and symlink
   follow. Network-layer redirects and container path mapping are not covered.
+- **Proof custody in the teaching kernel (issue #3, accepted into
+  Provability).** The invariant is: the moment-of-action record binds
+  approved × in-force grant × instance identity, and the ledger lives in a
+  different trust domain from both the agent and the PEP. The reference still
+  co-locates `AutonomyBoundary` and `Ledger` in one process and treats
+  instance identity as a software claim. Hardware attestation and an external
+  ledger are production upgrades, not properties of this kernel.
 - **Availability.** Fail-closed is a safety choice with an availability cost.
   This framework chooses safety; your SLOs may require compensating design.
 
@@ -93,6 +103,9 @@ Components:
 1. **Fail closed.** Ambiguity at the boundary resolves to "no."
 2. **Bind semantics, not strings.** Authorize what it resolved to, not what was typed.
 3. **Split custody.** Whoever enforces must not also hold the proof.
-4. **Anchor outside yourself.** Evidence must be checkable by someone who isn't you.
-5. **Prefer boring.** Every mechanism here is deliberately auditable-by-hand.
+4. **Bind the triple.** Approved, in-force grant, and instance identity are
+   one record, written at the moment of action, somewhere the agent cannot
+   rewrite.
+5. **Anchor outside yourself.** Evidence must be checkable by someone who isn't you.
+6. **Prefer boring.** Every mechanism here is deliberately auditable-by-hand.
    The boring controls are the ones that ship.

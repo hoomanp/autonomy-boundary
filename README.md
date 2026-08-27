@@ -65,9 +65,9 @@ Organized by when they apply in an action's life.
 | Control | Question it answers |
 |---|---|
 | **Observability** | Can you see what it did — what it saw, what it chose, and why? |
-| **Provability** | Can you prove that record was not altered afterward? Hash-chained, append-only, anchored outside the operator's trust domain. |
+| **Provability** | Can you prove that record was not altered afterward? Hash-chained, append-only, and it binds what was approved, what was in force, and which instance acted — held outside both the agent and the enforcement point. |
 
-Observability and Provability are separate controls with separate custodians. The enforcement point must *produce* the evidence — it is the only component that sees the full binding at the moment of action — but must not *hold* it. Otherwise enforcement and evidence share a failure domain, and the proof is a report written by the thing under investigation.
+Observability and Provability are separate controls with separate custodians. A check at the moment of action only counts if it produces a record, and the record only counts if three facts are bound together: what was approved, what was actually in force, and which instance of the agent acted. The enforcement point must *produce* that evidence — it is the only component that sees the full binding — but must not *hold* it. Otherwise the proof is a report written by the thing under investigation.
 
 ## Reference implementation
 
@@ -96,11 +96,13 @@ Existing frameworks (OWASP Top 10 for Agentic Applications, NIST's AI agent work
 
 - [#1 State Admissibility](https://github.com/hoomanp/autonomy-boundary/issues/1) — James Mayo / Sheila Studios. Now control #8.
 - [#2 Semantic binding](https://github.com/hoomanp/autonomy-boundary/issues/2) — Girimaji S. Bound into Legibility and Authority.
+- [#3 Proof custody](https://github.com/hoomanp/autonomy-boundary/issues/3) — Vinay Bansal / UBIQS. Bound into Provability: the moment-of-action record binds approved × in-force grant × instance identity, held outside the agent.
 
 ### Remaining limits
 
 1. **Original-state soundness** — a matching state hash proves the snapshot is unchanged, not that it was sound when taken.
 2. **Resolution coverage** — environment expansion, aliases, POSIX normalize, and symlink follow are in. Network-layer redirects and container path mapping are not.
+3. **Instance identity and ledger custody** — the reference records instance identity as a signed software claim and still co-locates the ledger with the enforcement point. Hardware attestation and a ledger in a different trust domain are the production bar.
 
 Field reports from regulated deployments are welcome. Open an issue.
 

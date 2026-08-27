@@ -32,9 +32,13 @@ This is the control that existing frameworks leave unnamed, and it is the contro
 
 ### After acting, and continuously
 
-**7. Observability.** Every decision the boundary makes is recorded as it happens — intent, control results, outcome — not reconstructed afterward from application logs. An auditor should be able to answer "what did the agent do and why was it allowed" from the boundary's own records.
+**7. Observability.** Every decision the boundary makes is recorded as it happens — intent, control results, outcome — not reconstructed afterward from application logs. An auditor should be able to answer "what did the agent do and why was it allowed" from the boundary's own records. A check at the moment of action that produces no record did not happen.
 
 **8. Provability.** The record itself must be trustworthy. The ledger is append-only and hash-chained: each record embeds the hash of its predecessor, so modification anywhere breaks verification everywhere after it. The boundary verifies the chain before new actions land on top of it; a broken chain halts execution.
+
+A record only counts if three facts are bound together **at the moment of action**, somewhere the agent cannot rewrite: **what was approved** (the intent hash the human bound), **what was actually in force** (the live grant — envelope, remaining budget, expiry), and **which instance of the agent acted**. Skip any of the three, and the proof is a report written by the thing under investigation.
+
+Observability produces that record; Provability holds it in a **different trust domain** from both the agent runtime and the enforcement point. The enforcement point is the only component that sees the full binding at the moment of action, so it must emit the evidence — and must not be the custodian. In the reference, instance identity is a signed software assertion. A hardware root of trust (TEE, silicon identity) is the production upgrade that makes the instance claim unforgeable; it is not a property of this kernel.
 
 ## Accountability
 
@@ -44,10 +48,11 @@ The boundary's placement is a leadership decision, not a model property. Which a
 
 ABF governs the action boundary of deployed agents. It deliberately excludes model alignment, training-data governance, and full supply-chain assurance. Those are real problems with their own controls; claiming them here would dilute the controls this framework can actually enforce.
 
-Two honest remaining limits, accepted from issues [#1](https://github.com/hoomanp/autonomy-boundary/issues/1) and [#2](https://github.com/hoomanp/autonomy-boundary/issues/2):
+Honest remaining limits, accepted from issues [#1](https://github.com/hoomanp/autonomy-boundary/issues/1), [#2](https://github.com/hoomanp/autonomy-boundary/issues/2), and [#3](https://github.com/hoomanp/autonomy-boundary/issues/3):
 
 - **Original-state soundness.** State Admissibility detects post-approval drift of the bound dependency set. A matching hash cannot prove the snapshot was complete or uncontaminated at approval time.
 - **Resolution coverage.** The reference canonicalizer covers env expansion, aliases, POSIX normalize, and symlink follow. Network-layer redirects and container path mapping are out of coverage.
+- **Instance identity and ledger custody.** The teaching kernel records instance identity as a signed software claim and still co-locates the ledger with the enforcement point. Hardware attestation, and a ledger in a different trust domain, are the production bar — not a claim this repository currently satisfies.
 
 ## Reference implementation
 
