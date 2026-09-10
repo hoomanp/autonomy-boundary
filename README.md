@@ -16,6 +16,16 @@ A second failure is quieter. Every control can pass and the action can still be 
 
 ## Run the demos
 
+**Scope — a boundary you declare is not a boundary the target enforces:**
+
+```bash
+python3 demo/scope_enforcement_gap.py              # target enforces read-only → both harnesses agree
+python3 demo/scope_enforcement_gap.py --divergent  # target does not → naive writes 18,000, verified fails closed
+python3 -m unittest demo/test_scope_enforcement_gap.py   # 7 tests, stdlib only
+```
+
+Reproduces the failure class behind the September 2026 OpenAI DSEWiki incident — a harness that trusts its own declared scope, versus one that verifies the target's actual enforcement before acting.
+
 **Legibility — approved must equal authorized:**
 
 ```bash

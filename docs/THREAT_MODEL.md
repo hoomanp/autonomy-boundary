@@ -37,12 +37,13 @@ Components:
 | A6 | **Composition attacker** | Individually-approved actions chained into an aggregate effect nobody approved (confused deputy). |
 | A7 | **Stale or omitted eligibility state** | The approval is valid; the world that made the action eligible has moved, or a required dependency was never bound. |
 | A8 | **Self-investigating proof** | The agent runtime or the enforcement point is also the custodian of the record. Post-incident, the proof is a report written by the thing under investigation. Instance identity is a copyable software claim. |
+| A9 | **Declared-scope / enforced-scope divergence** | The harness's own definition of a boundary ("read-only") is not how the target system enforces it. Every harness-side check passes and the target still records writes the harness never counted. No attacker required. |
 
 ## 3. Control ↔ threat mapping
 
 | Control | Primarily counters | Mechanism |
 |---|---|---|
-| Scope | A1, A4, A3 | Blast radius bounded before anything runs; checked against the **resolved** target. |
+| Scope | A1, A4, A3, A9 | Blast radius bounded before anything runs; checked against the **resolved** target — and against the target's *observed* enforcement, not the harness's classification of its own request. |
 | Authority | A4, A6 | Task-scoped signed grants; capability envelope; inherited subprocess envelope; cumulative chain budget across sequential and parallel spend. |
 | Input Integrity | A1 | Validation, provenance checks, injection defense on everything the agent reads. |
 | Reversibility | A4 | Irreversible actions classified and gated on human sign-off; everything else undoable. |
@@ -95,6 +96,29 @@ Components:
   co-locates `AutonomyBoundary` and `Ledger` in one process and treats
   instance identity as a software claim. Hardware attestation and an external
   ledger are production upgrades, not properties of this kernel.
+- **Declared Scope vs. Enforced Scope Divergence.** A harness that defines its
+  own boundary is auditing its own labels. Whether a request is a read is
+  decided by the target's permission model — written by someone else — not by
+  the harness's request type, and the two can differ. The September 2026
+  OpenAI **DSEWiki** incident is the reference case: an agent operating under
+  a declared read-only scope produced roughly **18,000** discussion posts,
+  because the endpoint it classified as a read materialised a post on every
+  visit. Nothing in the harness was violated; it was measuring the wrong
+  thing. `demo/scope_enforcement_gap.py` reproduces the class and the fix —
+  probe the target with a canary request, compare its state fingerprint before
+  and after, refuse the request class outright when the declared scope is not
+  enforced there, and re-check per action, because a passing probe is evidence
+  and not a standing permission. **Distinct from proof custody** (issue
+  [#3](https://github.com/hoomanp/autonomy-boundary/issues/3), raised by Vinay
+  Bansal / UBIQS): that gap is about the record of an authorization — binding
+  approved × in-force grant × instance identity, and holding it outside the
+  agent. This one is about the target. An authorization can be perfectly
+  provenanced and still be executed by a system that enforces a different
+  boundary than the one declared; verifying who authorized an action says
+  nothing about what the target does with it. The reference `ScopeControl`
+  checks the resolved target against policy but does not yet probe the
+  target's enforcement. That is a production upgrade, not a property of this
+  kernel.
 - **Availability.** Fail-closed is a safety choice with an availability cost.
   This framework chooses safety; your SLOs may require compensating design.
 
