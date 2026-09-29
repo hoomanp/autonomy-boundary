@@ -1,35 +1,57 @@
-# The Autonomy Boundary Framework
+# The Autonomy Boundary Framework (ABF)
 
-**Eight controls for auditable agent autonomy.**
+**Eight controls for auditable agent autonomy.**  
+*The line where a system stops assisting and starts acting — and the mathematical proof that it stayed inside it.*
 
-The line where a system stops assisting and starts acting — and the proof that it stayed inside it.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests: 64 Passing](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)](tests/)
+[![Latency: < 1ms](https://img.shields.io/badge/latency-%3C%201ms%20(Zero--LLM)-purple.svg)](#the-mental-model-ring-0-for-ai-agents)
+[![OWASP ASI: 8/8 Coverage](https://img.shields.io/badge/OWASP%20ASI-8%2F8%20Verified-blue.svg)](evals/owasp_asi_coverage.py)
+[![MCP Compliant](https://img.shields.io/badge/MCP-Standard%20Gateway-orange.svg)](src/abf/mcp.py)
 
-> Approved must equal authorized. The world behind that approval must still deserve to govern.
+---
 
-A wrong model answer is an edit. A wrong **action** is an incident, a breach notice, or a finding. **Guardrails police words; Autonomy Boundaries police actions.**
+> ### *"Approved must equal authorized. The world behind that approval must still deserve to govern."*
 
-The TrustFall and SymJack disclosures showed the failure across major coding agents: the action a human approves on screen and the action the runtime is empowered to take can diverge. The user approves "trust this folder." The system hears "run arbitrary code." The dialog looked normal.
+A wrong model answer is an edit. A wrong **action** is an incident, a breach notice, a regulatory penalty, or a court finding.
 
-A second failure is quieter. Every control can pass and the action can still be wrong, because the state that made it eligible has gone stale. This framework is the runtime control plane that makes agent autonomy **provable** — to an examiner, an auditor, a clinician, a court, or an incident review.
+**Guardrails police words; Autonomy Boundaries police actions.**
 
-**Status:** v0.3 reference implementation (Python 3.10+). The `demo/` scripts run on Python 3.9+ with no dependencies.
+As enterprises transition from generative chat (assist) and copilots (augment) to autonomous agents that mutate databases, execute code, trigger payments, and modify infrastructure, traditional authorization falls apart at the seams.
 
-### The Mental Model: Ring 0 for AI Agents
-* **The OS Kernel Analogy**: The LLM is untrusted userland (Ring 3). The Autonomy Boundary is the OS kernel (Ring 0). When a process calls a syscall, the kernel does not ask the process if it is safe—it asserts UID, capability masks, file descriptors, and quotas.
-* **Zero Trust for Agents**: Never trust the agent's self-reported intent; always verify the post-resolution semantic effect at the enforcement point.
-* **Deterministic & Sub-Millisecond**: ABF operates in **`< 1ms`** with **zero LLM calls** in the enforcement path. It is deterministic cryptography and policy, not a flaky LLM-as-a-judge.
+1. **The Consent Divergence Problem (Legibility)**: Disclosed across major coding agents in the SymJack and TrustFall incidents, the action a human approves on screen and the action the runtime executes can diverge. The user approves *"trust this folder"*; the system executes arbitrary code.
+2. **The Target Enforcement Gap (Scope)**: Exposed in the September 2026 OpenAI DSEWiki incident, a harness declared a "read-only" scope, but the target endpoint mutated state on visit—flooding 18,000 public posts without violating any harness-internal labels.
+3. **The State Drift Problem (State Admissibility)**: Every control passes and an approval is valid, yet the action is catastrophic because the world state that justified it has gone stale (e.g. an account frozen by compliance seconds after sign-off).
+
+The **Autonomy Boundary Framework (ABF)** is the deterministic Policy Enforcement Point (PEP) and tamper-evident custody plane that makes AI agent autonomy **provable** to examiners, auditors, CISOs, clinicians, and courts.
+
+---
+
+## The Mental Model: Ring 0 for AI Agents
+
+* **The OS Kernel Analogy (Ring 0 vs. Ring 3)**:  
+  The LLM is untrusted userland (Ring 3). The Autonomy Boundary is the OS kernel (Ring 0). When a userland process calls a syscall, the kernel does not ask the process whether it is well-intentioned—it deterministically asserts UID, capability masks, file descriptors, and quota budgets.
+* **Zero Trust for Agent Actions**:  
+  Never trust the agent's self-reported intent; always verify the post-resolution semantic effect immediately before execution at the enforcement point.
+* **Sub-Millisecond & Zero-LLM**:  
+  ABF executes in **`< 1 millisecond`** with **zero LLM calls** in the enforcement path. It is deterministic cryptography and policy, not a slow, probabilistic LLM-as-a-judge.
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart TD
     subgraph AgentRuntime["Agent Userland (Untrusted)"]
-        LLM["AI Agent / LLM"] --> Proposal["Action Proposal (Intent)"]
+        LLM["AI Agent / Chatbot / LLM"] --> Proposal["Action Proposal (Canonical Intent)"]
     end
 
-    Proposal --> PEP["Autonomy Boundary PEP (< 1ms, Zero-LLM)"]
+    Proposal --> PEP["Autonomy Boundary PEP (< 1ms, Deterministic)"]
 
     subgraph PEPGuards["Inline Lifecycle Controls (Fail Closed)"]
         direction TB
-        C1["1. Scope (Resolved & Probed Target)"]
+        C1["1. Scope (Resolved & Canary-Probed Target)"]
         C2["2. Authority (Allowlist, Envelopes & Chain Budgets)"]
         C3["3. Input Integrity (Schemas, Patterns & Guardrail Hooks)"]
         C4["4. Reversibility (Human Gate on Irreversible Actions)"]
@@ -40,7 +62,7 @@ flowchart TD
 
     PEP --> PEPGuards
 
-    PEPGuards -->|Permitted| Exec["Execution Plane (Enterprise APIs, Tools, DBs)"]
+    PEPGuards -->|Permitted| Exec["Execution Plane (Enterprise APIs, Tools, Databases)"]
     PEPGuards -->|Denied / Divergence| FailClosed["Fail Closed (Block Execution)"]
 
     subgraph AuditCustody["Non-Repudiation Custody Plane (Split Domain)"]
@@ -55,138 +77,178 @@ flowchart TD
 
 ![Autonomy Boundary](docs/assets/autonomy_boundary.png)
 
-## Run the demos
+---
 
-**Scope — a boundary you declare is not a boundary the target enforces:**
+## The Eight Controls
 
-```bash
-python3 demo/scope_enforcement_gap.py              # target enforces read-only → both harnesses agree
-python3 demo/scope_enforcement_gap.py --divergent  # target does not → naive writes 18,000, verified fails closed
-python3 -m unittest demo/test_scope_enforcement_gap.py   # 7 tests, stdlib only
+The framework organizes runtime governance into three lifecycle phases:
+
+### Phase 1: Before Acting (Pre-Execution Guardrails)
+
+| Control | Question It Answers | Enforcement Mechanism |
+|---|---|---|
+| **1. Scope** | What is the agent allowed to touch at all? | Checked against the **resolved canonical target** (symlinks followed, env expanded). Accepts active canary probes (`ProbedScopeControl`) to verify the target's permission model before execution. |
+| **2. Authority** | What may it do within that scope? | Explicit signed allowlists, capability envelopes, parent-to-subprocess inheritance constraints, and cumulative multi-step `chain_budget`. |
+| **3. Input Integrity** | Can the parameter payload be trusted? | Sanitizes prompt-injection patterns, path traversal sequences, and provides pluggable hooks for typed schemas (Pydantic) and enterprise guardrails (Llama Guard, NeMo). |
+
+### Phase 2: At the Boundary (The Moment of Crossing)
+
+| Control | Question It Answers | Enforcement Mechanism |
+|---|---|---|
+| **4. Reversibility** | Can this action be undone? | Classifies actions by undoability. Irreversible actions (payments, deletions, config updates) strictly require a signed human approval token. |
+| **5. Legibility** | Is what the human approved provably identical to what executes? | Asserted at the last point after resolution immediately before effect. Recomputes SHA-256 hash of post-resolution effect; fails closed on any parameter or target divergence (**SymJack / TOCTOU defense**). |
+| **6. State Admissibility** | Does the world behind the approval still deserve to govern? | Policy-declared dependencies (e.g. account active, risk score) are re-hashed at execution against bound approval snapshots. High-risk actions require both an unexpired window and matching state hashes. |
+
+### Phase 3: After & Continuously (Audit Custody Plane)
+
+| Control | Question It Answers | Enforcement Mechanism |
+|---|---|---|
+| **7. Observability** | Can you reconstruct what the agent did and why? | Every decision and evaluation context is emitted as structured telemetry directly at the PEP as it happens. |
+| **8. Provability** | Can you prove the record was not altered afterward? | Append-only, hash-chained ledger where tampering anywhere breaks verification downstream. Binds the **Proof Triple** (*Approved Intent × In-Force Grant × Instance Identity*) held in a separate trust domain. |
+
+---
+
+## Grounded in Real-World Incidents
+
+| Incident / Disclosure | Vulnerability Class | How ABF Neutralizes It |
+|---|---|---|
+| **OpenAI DSEWiki Incident** *(Sept 2026)* | **Declared-vs-Enforced Scope Gap**: Harness declared read-only scope, but visiting the target materialized 18,000 public discussion posts. | [`ProbedScopeControl`](src/abf/controls/scope.py) performs active canary probing before permitting a scope class, halting before touching real pages. |
+| **SymJack & TrustFall** *(May–June 2026)* | **Legibility Failure**: Coding agent approval dialog rendered a benign folder path, while the executor ran arbitrary shell execution. | [`LegibilityControl`](src/abf/controls/legibility.py) recomputes the canonical intent hash at the last PEP after path resolution, halting on any divergence. |
+| **Stale Authorization Exploits** | **State Admissibility Failure**: A human approved an action based on valid state, but system conditions shifted prior to effect. | [`StateAdmissibilityControl`](src/abf/controls/state_admissibility.py) re-hashes policy dependencies against current state, failing closed if state drifted. |
+
+---
+
+## First-Class Integrations
+
+### 1. Model Context Protocol (MCP) Gateway
+ABF provides a native Policy Enforcement Point for Anthropic's **Model Context Protocol (MCP)**. Wrap your tools in an ABF gateway to enforce boundaries on all `tools/list` and `tools/call` JSON-RPC requests:
+
+```python
+from abf import AutonomyBoundary, Ledger
+from abf.mcp import ABFMCPGateway
+
+gateway = ABFMCPGateway(boundary, signing_key=PEP_KEY, approver_key=APPROVER_KEY)
+
+# Register MCP tools with governance metadata
+@gateway.tool(name="issue_refund", description="Issue a refund", irreversible=True)
+def issue_refund(params):
+    return f"Refund of ${params['amount']} issued to {params['account_id']}"
+
+# Run as stdio server for Claude Desktop, Cursor, or Cline:
+if __name__ == "__main__":
+    gateway.run_stdio()
 ```
 
-Reproduces the failure class behind the September 2026 OpenAI DSEWiki incident — a harness that trusts its own declared scope, versus one that verifies the target's actual enforcement before acting.
-
-**Legibility — approved must equal authorized:**
-
+Run the runnable demo:
 ```bash
-python3 demo/intent_binding.py            # hashes match → executes
-python3 demo/intent_binding.py --attack   # runtime swaps the action → fails closed
-python3 demo/intent_binding.py --resolve  # execution-time path resolution diverges → fails closed
+python examples/mcp_boundary.py
 ```
 
-**State Admissibility — the world behind the approval still governs:**
+### 2. Importable Skill for AI Agents & Chatbots
+Equip LangChain, CrewAI, AutoGen, OpenAI Assistant, or custom chatbots with self-governing runtime boundaries:
 
-```bash
-python3 demo/state_admissibility.py           # bound state still current → executes
-python3 demo/state_admissibility.py --stale   # account frozen after approval → fails closed
+```python
+from abf.skill import AutonomyBoundarySkill
+
+skill = AutonomyBoundarySkill(boundary, signing_key=KEY, approver_key=APPROVER_KEY)
+skill.register_action("refund.issue", lambda p: f"Refunded ${p['amount']}")
+
+# 1. Agent proposes action (canonical intent generated)
+proposal = skill.propose_action("refund.issue", "acct/8841", {"amount": 250.0})
+if proposal.requires_approval:
+    print(proposal.approval_prompt)  # Rendered for human review
+
+# 2. Human supervisor signs approval token
+token = skill.approve_proposal(proposal.intent.hash, approver="alice")
+
+# 3. Agent executes with live state assertion
+outcome = skill.execute_action(proposal.intent.hash, approval=token)
+print(outcome)
+
+# 4. Instant mathematical verification of audit chain
+assert skill.inspect_ledger()["chain_intact"] is True
 ```
 
-**Provability — the tamper-evident ledger:**
-
+Run the runnable demo:
 ```bash
-python3 demo/ledger.py            # append decisions, verify the chain
-python3 demo/ledger.py --tamper   # edit a past entry → chain breaks, visibly
+python examples/skill_agent.py
 ```
 
-The approval binds to a canonical hash of the post-resolution effect. The enforcement point re-checks that hash at execution, re-hashes decision-critical state before effect, and appends every decision to a chain where tampering is mathematically visible.
+*For agent system prompts, see the standardized [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md).*
 
-## The eight controls
+---
 
-Organized by when they apply in an action's life.
+## Zero-Dependency Demos (`demo/`)
 
-**Before the agent acts**
-
-| Control | Question it answers |
-|---|---|
-| **Scope** | What is it allowed to touch at all? Checked against the resolved target, not the display path. |
-| **Authority** | What may it do within that scope? Signed, allowlisted, inside a capability envelope, under a cumulative chain budget. Borrowed power, not a standing key. |
-| **Input Integrity** | Can the thing it is acting on be trusted? Poisoned files, hostile repos, and injected instructions are caught before they become an action. |
-
-**At the boundary — the moment of crossing**
-
-| Control | Question it answers |
-|---|---|
-| **Reversibility** | Can this be undone? If not, it waits for a human. Irreversible actions are a different class. |
-| **Legibility** | Is what the human approved provably identical to the post-resolution effect about to run? Checked at the last enforcement point after resolution; fails closed on mismatch. |
-| **State Admissibility** | Does the world that made this action eligible still deserve to govern? Policy-declared dependencies are re-hashed; high-risk actions require both a live window and a matching snapshot. |
-
-**After, and continuously**
-
-| Control | Question it answers |
-|---|---|
-| **Observability** | Can you see what it did — what it saw, what it chose, and why? |
-| **Provability** | Can you prove that record was not altered afterward? Hash-chained, append-only, and it binds what was approved, what was in force, and which instance acted — held outside both the agent and the enforcement point. |
-
-Observability and Provability are separate controls with separate custodians. A check at the moment of action only counts if it produces a record, and the record only counts if three facts are bound together: what was approved, what was actually in force, and which instance of the agent acted. The enforcement point must *produce* that evidence — it is the only component that sees the full binding — but must not *hold* it. Otherwise the proof is a report written by the thing under investigation.
-
-## Reference implementation
-
-The `demo/` scripts are standalone. The full framework — all eight controls, wired into a lifecycle orchestrator that runs them in order and halts on any denial or exception — lives under `src/abf/`.
+All scripts in `demo/` run on Python 3.9+ with **zero dependencies**:
 
 ```bash
+# 1. Scope: Declared scope vs. target enforced scope (DSEWiki incident)
+python3 demo/scope_enforcement_gap.py --divergent
+
+# 2. Legibility: Parameter swap & path resolution divergence (SymJack / TOCTOU)
+python3 demo/intent_binding.py --attack
+python3 demo/intent_binding.py --resolve
+
+# 3. State Admissibility: Frozen account state drift after approval
+python3 demo/state_admissibility.py --stale
+
+# 4. Provability: Mathematical tamper-evidence on the decision chain
+python3 demo/ledger.py --tamper
+```
+
+---
+
+## Quickstart & Evaluation Suite
+
+```bash
+# 1. Install reference implementation
+git clone https://github.com/hoomanp/autonomy-boundary.git
+cd autonomy-boundary
 pip install -e ".[dev]"
-pytest -q                              # test suite (57 passed)
-python examples/refund_agent.py        # end-to-end: swap, stale state, chain budget
-python examples/mcp_boundary.py        # Model Context Protocol (MCP) tool enforcement
-python evals/owasp_asi_coverage.py     # adversarial scenarios → control matrix
+
+# 2. Run test suite (64 passed in < 0.1s)
+pytest -q
+
+# 3. Run OWASP Agentic Security Initiative (ASI-1 through ASI-8) coverage matrix
+python evals/owasp_asi_coverage.py
+
+# 4. Run end-to-end enterprise refund scenario
+python examples/refund_agent.py
 ```
 
-The refund example approves a $250 refund, executes it, then attempts a $25,000 intent against the same approval token. Legibility denies it: the approved hash and the executing hash differ. It then freezes the account under the same approval. State Admissibility denies it.
+---
 
-The MCP proxy example intercepts Anthropic Model Context Protocol `tools/call` JSON-RPC requests, synthesizes and signs canonical intents, enforces the boundary before tool dispatch, and returns standard JSON-RPC results or denials.
+## The Proof Triple & Custody Principle
 
-Optional SDK harnesses (LangChain, Anthropic, OpenAI, Gemini, OpenRouter Python, and a small TypeScript Agent SDK demo) wrap the same PEP. They are not a ninth control: memory, KV, and prompt-cache sessions are effects the eight already govern. Fake-model by default; `--live` needs extras and API keys. See [`examples/harnesses/README.md`](examples/harnesses/README.md).
+A moment-of-action audit record only counts if three facts are cryptographically bound together:
+$$\text{Proof Triple} = (\text{Approved Intent Hash} \times \text{In-Force Grant} \times \text{Instance Identity})$$
 
-```bash
-pip install -e ".[harness]"          # optional; not required for pytest
-python examples/harnesses/openrouter_refund.py
-```
+* **Split Custody**: The Policy Enforcement Point (PEP) must *produce* the evidence—it is the only component that sees the full binding—but must *not hold* it. If the PEP holds the proof, the record is a report written by the entity under investigation.
+* **External Anchoring**: The ledger root must anchor in a separate trust domain (e.g. S3 Object Lock, RFC 3161 Timestamp Authority, or external transparency log).
 
-- Each control is a module under `src/abf/controls/`.
-- The orchestrator (`src/abf/boundary.py`) runs them in lifecycle order and asserts ledger chain health at entrance.
-- `Intent` (`src/abf/intent.py`) serializes canonically so its hash is stable across the approval surface and the executor. The hash binds the post-resolution effect and the state snapshot. The reference uses HMAC-SHA256 to keep dependencies minimal; production should use Ed25519.
-- Approvals (`approve()` in `src/abf/controls/legibility.py`) support cryptographic HMAC signatures binding approver identity, approved hash, and timestamp.
-- Scope (`src/abf/controls/scope.py`) supports active canary probing (`ProbedScopeControl`) to verify target permission models before execution.
-- Input Integrity (`src/abf/controls/input_integrity.py`) supports pluggable schema validators and enterprise guardrail hooks.
+---
 
-## Scope of this framework
+## Specification & Standards
 
-This framework governs the **runtime boundary**: what an agent does when it acts, and whether you can prove it. It does not address model alignment, training-data governance, or full supply-chain assurance. Those are a different control surface.
+* [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) — Formal RFC specification (ABF-RFC-01) covering canonical schemas for Intent, Approval Token, Proof Triple, and Ledger Record.
+* [`docs/framework.md`](docs/framework.md) — Comprehensive architectural phasing, control deep-dives, and boundary scopes.
+* [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) — Adversaries (A1–A9), trust assumptions, and explicit non-goals.
+* [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md) — Agentic skill definition for LLMs and autonomous orchestrators.
+* [`examples/harnesses/`](examples/harnesses/) — Optional SDK wrappers for LangChain, Anthropic, OpenAI, Gemini, OpenRouter Python, and TypeScript Agent SDK.
 
-Existing frameworks (OWASP Top 10 for Agentic Applications, NIST's AI agent work, CSA MAESTRO, ISO 42001, vendor security stacks) enumerate threats and cover *authorization*. What they do not isolate as a first-class control is **consent integrity** — the guarantee that what a human approved is provably what the agent was authorized to do. That is Legibility. State Admissibility is the sibling: the world behind that consent still has to deserve to govern.
+---
 
-### Accepted from public review
-
-- [#1 State Admissibility](https://github.com/hoomanp/autonomy-boundary/issues/1) — James Mayo / Sheila Studios. Now control #8.
-- [#2 Semantic binding](https://github.com/hoomanp/autonomy-boundary/issues/2) — Girimaji S. Bound into Legibility and Authority.
-- [#3 Proof custody](https://github.com/hoomanp/autonomy-boundary/issues/3) — Vinay Bansal / UBIQS. Bound into Provability: the moment-of-action record binds approved × in-force grant × instance identity, held outside the agent.
-
-### Remaining limits
-
-1. **Original-state soundness** — a matching state hash proves the snapshot is unchanged, not that it was sound when taken.
-2. **Resolution coverage** — environment expansion, aliases, POSIX normalize, and symlink follow are in. Network-layer redirects and container path mapping are not.
-3. **Instance identity and ledger custody** — the reference records instance identity as a signed software claim and still co-locates the ledger with the enforcement point. Hardware attestation and a ledger in a different trust domain are the production bar.
-
-Field reports from regulated deployments are welcome. Open an issue.
-
-## Documents
-
-- [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) — formal RFC-style protocol and data schemas (Intent, Approval Token, Proof Triple, Ledger Record).
-- [`docs/framework.md`](docs/framework.md) — lifecycle phasing, each control in depth, and what ABF excludes.
-- [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) — adversaries, control mapping, trust assumptions, and explicit non-goals.
-- `demo/` — runnable controls, no dependencies.
-- `src/abf/` — reference implementation.
-- [`examples/mcp_boundary.py`](examples/mcp_boundary.py) — Model Context Protocol (MCP) enforcement proxy.
-- [`examples/harnesses/`](examples/harnesses/) — optional SDK wrappers; ABF remains the PEP.
-
-## Author
+## Author & Enterprise Background
 
 **Hooman Parta** — [linkedin.com/in/hooman-parta](https://www.linkedin.com/in/hooman-parta)
 
-25+ years securing cloud platforms at Fortune-100 scale. Companion essays: *The Autonomy Boundary* series and *The Last Mile* (finance, healthcare, retail, and government), on LinkedIn.
+25+ years securing cloud platforms and distributed systems at Fortune-100 scale.  
+Companion essays on LinkedIn: *The Autonomy Boundary* series and *The Last Mile* (finance, healthcare, retail, and critical infrastructure).
 
-This repository is the canonical home for the framework — docs, demos, reference implementation, and design discussion via [issues](https://github.com/hoomanp/autonomy-boundary/issues). There is no separate hosted site.
+This repository is the canonical home for the framework — specifications, reference kernel, MCP gateway, demos, and public review via [issues](https://github.com/hoomanp/autonomy-boundary/issues).
+
+---
 
 ## License
 

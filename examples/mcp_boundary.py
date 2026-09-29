@@ -37,91 +37,10 @@ APPROVER_KEY = os.urandom(32)
 WINDOW = "2099-01-01T00:00:00+00:00"
 
 
-class MCPBoundaryProxy:
-    """Policy Enforcement Point (PEP) proxy for Model Context Protocol (MCP) tools."""
+from abf.mcp import ABFMCPGateway
 
-    def __init__(self, boundary: AutonomyBoundary, signing_key: bytes | None = None) -> None:
-        self.boundary = boundary
-        self.signing_key = signing_key or PEP_SIGNING_KEY
-        self._tools: dict[str, Callable[[dict[str, Any]], Any]] = {}
-
-    def register_tool(self, name: str, fn: Callable[[dict[str, Any]], Any]) -> None:
-        self._tools[name] = fn
-
-    def create_intent(
-        self,
-        tool_name: str,
-        arguments: dict[str, Any],
-        context: dict[str, Any] | None = None,
-        intent_id: str | None = None,
-    ) -> Intent:
-        """Constructs and signs a canonical ABF Intent for an MCP tool call."""
-        resource = arguments.get("resource") or arguments.get("account_id") or "default"
-        action_verb = f"mcp.{tool_name}"
-        ctx = context or {}
-        approval_ctx = ctx.get("approval")
-        resolved_intent_id = (
-            intent_id
-            or (approval_ctx or {}).get("intent_id")
-            or arguments.get("intent_id")
-            or "mcp-default-intent"
-        )
-
-        return Intent(
-            action=action_verb,
-            resource=resource,
-            params=arguments,
-            intent_id=resolved_intent_id,
-            resolved_target=resource,
-            effective_identity=ctx.get("instance_id", "mcp:client-session"),
-            capabilities=(tool_name,),
-            data_boundary=resource,
-            expiry=ctx.get("expiry", WINDOW),
-            state_deps=ctx.get("bound_deps", {}),
-            validity_window=ctx.get("validity_window", WINDOW),
-        ).sign(self.signing_key)
-
-    def handle_mcp_request(self, mcp_msg: dict[str, Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Intercepts an MCP JSON-RPC tools/call request, enforces ABF controls,
-        and dispatches to the underlying tool only if permitted.
-        """
-        req_id = mcp_msg.get("id")
-        method = mcp_msg.get("method")
-
-        if method != "tools/call":
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "error": {"code": -32601, "message": f"Method '{method}' not handled by boundary"},
-            }
-
-        params = mcp_msg.get("params", {})
-        tool_name = params.get("name")
-        arguments = params.get("arguments", {})
-
-        # Map MCP tool call into a canonical ABF Intent
-        intent = self.create_intent(tool_name, arguments, context)
-
-        # Enforce all eight controls at the boundary
-        try:
-            def _run_action(it: Intent) -> Any:
-                target_fn = self._tools.get(tool_name)
-                if not target_fn:
-                    raise PermissionError(f"unregistered tool implementation: {tool_name}")
-                return target_fn(it.params)
-
-            output = self.boundary.execute(intent, _run_action, context)
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {"content": [{"type": "text", "text": str(output)}]},
-            }
-        except PermissionError as err:
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "error": {"code": -32000, "message": f"Autonomy Boundary Denied: {err}"},
-            }
+# Backward-compatible alias for example consumers and tests
+MCPBoundaryProxy = ABFMCPGateway
 
 
 def main() -> None:
@@ -152,7 +71,7 @@ def main() -> None:
     ]
 
     boundary = AutonomyBoundary(controls, ledger)
-    proxy = MCPBoundaryProxy(boundary)
+    proxy = MCPBoundaryProxy(boundary, PEP_SIGNING_KEY, approver_key=APPROVER_KEY)
 
     # Register backend tool implementations
     proxy.register_tool(
@@ -179,27 +98,19 @@ def main() -> None:
         },
     }
 
-    # Human creates a signed approval token
-    legit_intent = Intent(
-        action="mcp.issue_refund",
-        resource="acct/8841",
-        params={"account_id": "acct/8841", "amount": 250.0},
-        resolved_target="acct/8841",
-        effective_identity="mcp:client-session",
-        capabilities=("issue_refund",),
-        data_boundary="acct/8841",
-        expiry=WINDOW,
-        state_deps=deps,
-        validity_window=WINDOW,
-    ).sign(PEP_SIGNING_KEY)
-
-    approval_token = approve(legit_intent, approver="ciso_on_call", key=APPROVER_KEY)
-    ctx = {
-        "approval": approval_token,
+    ctx: dict = {
         "current_state": deps,
         "bound_deps": deps,
         "instance_id": "mcp:client-session",
     }
+    legit_intent = proxy.create_intent(
+        "issue_refund",
+        {"account_id": "acct/8841", "amount": 250.0},
+        ctx,
+        intent_id="refund-call-001",
+    )
+    approval_token = approve(legit_intent, approver="ciso_on_call", key=APPROVER_KEY)
+    ctx["approval"] = approval_token
 
     resp1 = proxy.handle_mcp_request(mcp_call, ctx)
     print("Response:", json.dumps(resp1, indent=2))

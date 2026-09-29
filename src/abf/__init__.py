@@ -9,6 +9,8 @@ After acting:    Observability, Provability
 from abf.intent import Intent, canonical_hash, canonicalize_target, snapshot_state
 from abf.boundary import AutonomyBoundary, BoundaryDecision
 from abf.ledger import Ledger
+from abf.mcp import ABFMCPGateway, MCPTool
+from abf.skill import AutonomyBoundarySkill, ProposedAction
 
 __all__ = [
     "Intent",
@@ -18,5 +20,9 @@ __all__ = [
     "AutonomyBoundary",
     "BoundaryDecision",
     "Ledger",
+    "ABFMCPGateway",
+    "MCPTool",
+    "AutonomyBoundarySkill",
+    "ProposedAction",
 ]
 __version__ = "0.3.0"
