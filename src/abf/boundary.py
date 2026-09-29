@@ -31,7 +31,19 @@ class AutonomyBoundary:
     def evaluate(self, intent: Intent, context: dict[str, Any] | None = None) -> BoundaryDecision:
         context = context or {}
         decision = BoundaryDecision(allowed=True)
+
+        # Entrance invariant: verify ledger chain integrity before evaluating or recording
+        if not self.ledger.verify_chain():
+            decision.allowed = False
+            decision.results.append(
+                ControlResult("provability", False, "ledger chain failed verification; halting")
+            )
+            return decision
+
         for control in self.controls:
+            if control.name == "provability":
+                decision.results.append(ControlResult("provability", True, "ledger chain verified"))
+                continue
             try:
                 result = control.check(intent, context)
             except Exception as exc:  # fail closed

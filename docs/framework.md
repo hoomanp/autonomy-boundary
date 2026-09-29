@@ -14,7 +14,7 @@ The framework treats the boundary as an engineering surface with three phases: w
 
 ### Before acting
 
-**1. Scope.** The agent may act only on resources inside its declared scope. Scope is declared in policy, not inferred from behavior, and is checked against the **post-resolution** target the intent binds — not against the display path, and not against what the agent says it is doing. `acct/../payroll/secret` is `payroll/secret`.
+**1. Scope.** The agent may act only on resources inside its declared scope. Scope is declared in policy, not inferred from behavior, and is checked against the **post-resolution** target the intent binds — not against the display path, and not against what the agent says it is doing. `acct/../payroll/secret` is `payroll/secret`. Scope optionally performs active canary probing (`ProbedScopeControl`) to verify that the target's underlying permission model actually enforces the declared boundary, preventing silent write-on-read divergence.
 
 **2. Authority.** Every action must appear on an explicit allowlist, and the intent describing it must carry a valid signature. The intent's capability set must sit inside the policy envelope; subprocesses inherit a parent envelope they cannot grow. A task carries a cumulative authority budget shared across sequential and parallel chains — the caller accumulates spend, the control refuses when the budget is exhausted. No allowlist entry means no authority; an unsigned or tampered intent is denied regardless of content.
 

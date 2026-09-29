@@ -8,6 +8,8 @@ the bound effect. Divergence fails closed (TOCTOU / SymJack).
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 from typing import Any
 
 from abf.controls.base import Control, ControlResult
@@ -33,18 +35,61 @@ def render_for_human(intent: Intent) -> str:
     )
 
 
-def approve(intent: Intent, approver: str) -> dict[str, Any]:
-    """A human approval token, bound to the intent hash it was shown."""
-    return {"approver": approver, "approved_hash": intent.hash, "rendered": render_for_human(intent)}
+def approve(
+    intent: Intent,
+    approver: str,
+    *,
+    key: bytes | None = None,
+    timestamp: str | None = None,
+) -> dict[str, Any]:
+    """A human approval token, bound to the intent hash it was shown.
+
+    If `key` is provided, computes an HMAC-SHA256 signature over
+    approver:approved_hash:timestamp to prevent approval token forgery.
+    """
+    token: dict[str, Any] = {
+        "approver": approver,
+        "approved_hash": intent.hash,
+        "intent_id": intent.intent_id,
+        "rendered": render_for_human(intent),
+    }
+    if timestamp:
+        token["timestamp"] = timestamp
+    if key is not None:
+        payload = f"{approver}:{intent.hash}:{timestamp or ''}".encode()
+        token["signature"] = hmac.new(key, payload, hashlib.sha256).hexdigest()
+    return token
 
 
 class LegibilityControl(Control):
     name = "legibility"
 
+    def __init__(
+        self,
+        approver_key: bytes | None = None,
+        *,
+        require_approval_signature: bool = False,
+    ) -> None:
+        self.approver_key = approver_key
+        self.require_approval_signature = require_approval_signature
+
     def check(self, intent: Intent, context: dict[str, Any]) -> ControlResult:
         approval = context.get("approval")
         if approval is None:
             return self.allow("no approval present; reversibility governs whether one is required")
+
+        if self.approver_key is not None or self.require_approval_signature:
+            sig = approval.get("signature")
+            if not sig:
+                return self.deny("approval token missing cryptographic signature")
+            if self.approver_key is not None:
+                approver = approval.get("approver", "")
+                approved_hash = approval.get("approved_hash", "")
+                timestamp = approval.get("timestamp", "")
+                payload = f"{approver}:{approved_hash}:{timestamp}".encode()
+                expected = hmac.new(self.approver_key, payload, hashlib.sha256).hexdigest()
+                if not hmac.compare_digest(sig, expected):
+                    return self.deny("approval token signature invalid")
         executing_hash = intent.hash  # recomputed from the action about to run
         if approval.get("approved_hash") != executing_hash:
             return self.deny(

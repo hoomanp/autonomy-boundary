@@ -6,11 +6,52 @@ The line where a system stops assisting and starts acting — and the proof that
 
 > Approved must equal authorized. The world behind that approval must still deserve to govern.
 
-A wrong model answer is an edit. A wrong **action** is an incident, a breach notice, or a finding. The TrustFall and SymJack disclosures showed the failure across major coding agents: the action a human approves on screen and the action the runtime is empowered to take can diverge. The user approves "trust this folder." The system hears "run arbitrary code." The dialog looked normal.
+A wrong model answer is an edit. A wrong **action** is an incident, a breach notice, or a finding. **Guardrails police words; Autonomy Boundaries police actions.**
+
+The TrustFall and SymJack disclosures showed the failure across major coding agents: the action a human approves on screen and the action the runtime is empowered to take can diverge. The user approves "trust this folder." The system hears "run arbitrary code." The dialog looked normal.
 
 A second failure is quieter. Every control can pass and the action can still be wrong, because the state that made it eligible has gone stale. This framework is the runtime control plane that makes agent autonomy **provable** — to an examiner, an auditor, a clinician, a court, or an incident review.
 
 **Status:** v0.3 reference implementation (Python 3.10+). The `demo/` scripts run on Python 3.9+ with no dependencies.
+
+### The Mental Model: Ring 0 for AI Agents
+* **The OS Kernel Analogy**: The LLM is untrusted userland (Ring 3). The Autonomy Boundary is the OS kernel (Ring 0). When a process calls a syscall, the kernel does not ask the process if it is safe—it asserts UID, capability masks, file descriptors, and quotas.
+* **Zero Trust for Agents**: Never trust the agent's self-reported intent; always verify the post-resolution semantic effect at the enforcement point.
+* **Deterministic & Sub-Millisecond**: ABF operates in **`< 1ms`** with **zero LLM calls** in the enforcement path. It is deterministic cryptography and policy, not a flaky LLM-as-a-judge.
+
+```mermaid
+flowchart TD
+    subgraph AgentRuntime["Agent Userland (Untrusted)"]
+        LLM["AI Agent / LLM"] --> Proposal["Action Proposal (Intent)"]
+    end
+
+    Proposal --> PEP["Autonomy Boundary PEP (< 1ms, Zero-LLM)"]
+
+    subgraph PEPGuards["Inline Lifecycle Controls (Fail Closed)"]
+        direction TB
+        C1["1. Scope (Resolved & Probed Target)"]
+        C2["2. Authority (Allowlist, Envelopes & Chain Budgets)"]
+        C3["3. Input Integrity (Schemas, Patterns & Guardrail Hooks)"]
+        C4["4. Reversibility (Human Gate on Irreversible Actions)"]
+        C5["5. Legibility (Approved Hash == Executing Effect Hash)"]
+        C6["6. State Admissibility (Live State & Dependency Snapshot)"]
+        C1 --> C2 --> C3 --> C4 --> C5 --> C6
+    end
+
+    PEP --> PEPGuards
+
+    PEPGuards -->|Permitted| Exec["Execution Plane (Enterprise APIs, Tools, DBs)"]
+    PEPGuards -->|Denied / Divergence| FailClosed["Fail Closed (Block Execution)"]
+
+    subgraph AuditCustody["Non-Repudiation Custody Plane (Split Domain)"]
+        C7["7. Observability (Structured Decision Tracing)"]
+        C8["8. Provability (Append-Only Hash-Chained Ledger)"]
+        ProofTriple["Proof Triple: Approved Intent × In-Force Grant × Instance ID"]
+    end
+
+    PEPGuards --> AuditCustody
+    Exec --> AuditCustody
+```
 
 ![Autonomy Boundary](docs/assets/autonomy_boundary.png)
 
@@ -85,12 +126,15 @@ The `demo/` scripts are standalone. The full framework — all eight controls, w
 
 ```bash
 pip install -e ".[dev]"
-pytest -q                              # test suite
+pytest -q                              # test suite (57 passed)
 python examples/refund_agent.py        # end-to-end: swap, stale state, chain budget
+python examples/mcp_boundary.py        # Model Context Protocol (MCP) tool enforcement
 python evals/owasp_asi_coverage.py     # adversarial scenarios → control matrix
 ```
 
 The refund example approves a $250 refund, executes it, then attempts a $25,000 intent against the same approval token. Legibility denies it: the approved hash and the executing hash differ. It then freezes the account under the same approval. State Admissibility denies it.
+
+The MCP proxy example intercepts Anthropic Model Context Protocol `tools/call` JSON-RPC requests, synthesizes and signs canonical intents, enforces the boundary before tool dispatch, and returns standard JSON-RPC results or denials.
 
 Optional SDK harnesses (LangChain, Anthropic, OpenAI, Gemini, OpenRouter Python, and a small TypeScript Agent SDK demo) wrap the same PEP. They are not a ninth control: memory, KV, and prompt-cache sessions are effects the eight already govern. Fake-model by default; `--live` needs extras and API keys. See [`examples/harnesses/README.md`](examples/harnesses/README.md).
 
@@ -100,8 +144,11 @@ python examples/harnesses/openrouter_refund.py
 ```
 
 - Each control is a module under `src/abf/controls/`.
-- The orchestrator (`src/abf/boundary.py`) runs them in lifecycle order.
-- `Intent` (`src/abf/intent.py`) serializes canonically so its hash is stable across the approval surface and the executor. The hash binds the post-resolution effect and the state snapshot. The reference uses HMAC-SHA256 to keep dependencies minimal; production should use Ed25519. The binding logic is identical.
+- The orchestrator (`src/abf/boundary.py`) runs them in lifecycle order and asserts ledger chain health at entrance.
+- `Intent` (`src/abf/intent.py`) serializes canonically so its hash is stable across the approval surface and the executor. The hash binds the post-resolution effect and the state snapshot. The reference uses HMAC-SHA256 to keep dependencies minimal; production should use Ed25519.
+- Approvals (`approve()` in `src/abf/controls/legibility.py`) support cryptographic HMAC signatures binding approver identity, approved hash, and timestamp.
+- Scope (`src/abf/controls/scope.py`) supports active canary probing (`ProbedScopeControl`) to verify target permission models before execution.
+- Input Integrity (`src/abf/controls/input_integrity.py`) supports pluggable schema validators and enterprise guardrail hooks.
 
 ## Scope of this framework
 
@@ -125,10 +172,12 @@ Field reports from regulated deployments are welcome. Open an issue.
 
 ## Documents
 
+- [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) — formal RFC-style protocol and data schemas (Intent, Approval Token, Proof Triple, Ledger Record).
 - [`docs/framework.md`](docs/framework.md) — lifecycle phasing, each control in depth, and what ABF excludes.
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) — adversaries, control mapping, trust assumptions, and explicit non-goals.
 - `demo/` — runnable controls, no dependencies.
 - `src/abf/` — reference implementation.
+- [`examples/mcp_boundary.py`](examples/mcp_boundary.py) — Model Context Protocol (MCP) enforcement proxy.
 - [`examples/harnesses/`](examples/harnesses/) — optional SDK wrappers; ABF remains the PEP.
 
 ## Author

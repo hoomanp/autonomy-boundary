@@ -77,3 +77,25 @@ def test_prompt_injection_in_params_denied(tmp_path):
     decision = boundary.evaluate(intent, {})
     assert not decision.allowed
     assert decision.denials[0].control == "input_integrity"
+
+
+def test_tampered_ledger_halts_boundary(tmp_path):
+    import json
+    boundary, ledger = make_boundary(tmp_path)
+    ledger.append("event_1", {"data": "valid_1"})
+    ledger.append("event_2", {"data": "valid_2"})
+    assert ledger.verify_chain()
+
+    # Tamper with the first record on disk
+    path = tmp_path / "ledger.jsonl"
+    lines = path.read_text().splitlines()
+    rec = json.loads(lines[0])
+    rec["payload"]["data"] = "tampered"
+    lines[0] = json.dumps(rec, sort_keys=True)
+    path.write_text("\n".join(lines) + "\n")
+
+    intent = Intent("refund.issue", "acct/1", {"amount": 250.0}).sign(KEY)
+    decision = boundary.evaluate(intent, {"approval": approve(intent, "hp")})
+    assert not decision.allowed
+    assert decision.denials[0].control == "provability"
+    assert "ledger chain failed verification" in decision.denials[0].reason

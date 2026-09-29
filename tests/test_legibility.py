@@ -59,3 +59,34 @@ def test_execution_time_resolution_divergence_fails_closed():
     )
     assert not result.allowed
     assert "resolution diverged" in result.reason
+
+
+def test_signed_approval_token_passes():
+    approver_key = b"human_secret_approver_key_32_bytes"
+    intent = Intent("refund.issue", "acct/1", {"amount": 250.0})
+    token = approve(intent, "hp", key=approver_key, timestamp="2026-09-28T12:00:00Z")
+    control = LegibilityControl(approver_key=approver_key)
+    result = control.check(intent, {"approval": token})
+    assert result.allowed
+
+
+def test_tampered_approval_signature_fails():
+    approver_key = b"human_secret_approver_key_32_bytes"
+    intent = Intent("refund.issue", "acct/1", {"amount": 250.0})
+    token = approve(intent, "hp", key=approver_key, timestamp="2026-09-28T12:00:00Z")
+    # Forged approver
+    token["approver"] = "attacker"
+    control = LegibilityControl(approver_key=approver_key)
+    result = control.check(intent, {"approval": token})
+    assert not result.allowed
+    assert "signature invalid" in result.reason
+
+
+def test_missing_approval_signature_when_required_fails():
+    approver_key = b"human_secret_approver_key_32_bytes"
+    intent = Intent("refund.issue", "acct/1", {"amount": 250.0})
+    token = approve(intent, "hp")  # no key, unsigned
+    control = LegibilityControl(approver_key=approver_key)
+    result = control.check(intent, {"approval": token})
+    assert not result.allowed
+    assert "missing cryptographic signature" in result.reason

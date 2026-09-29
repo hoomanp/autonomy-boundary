@@ -38,9 +38,13 @@ class Ledger:
         return record
 
     def read(self) -> Iterator[dict[str, Any]]:
+        if not self.path.exists():
+            return
         with self.path.open(encoding="utf-8") as f:
             for line in f:
-                yield json.loads(line)
+                line = line.strip()
+                if line:
+                    yield json.loads(line)
 
     def verify_chain(self) -> bool:
         prev = GENESIS

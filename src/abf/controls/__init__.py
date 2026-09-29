@@ -1,5 +1,5 @@
 from abf.controls.base import Control, ControlResult
-from abf.controls.scope import ScopeControl
+from abf.controls.scope import ScopeControl, ProbedScopeControl
 from abf.controls.authority import AuthorityControl
 from abf.controls.input_integrity import InputIntegrityControl
 from abf.controls.reversibility import ReversibilityControl
@@ -10,7 +10,7 @@ from abf.controls.provability import ProvabilityControl
 
 __all__ = [
     "Control", "ControlResult",
-    "ScopeControl", "AuthorityControl", "InputIntegrityControl",
+    "ScopeControl", "ProbedScopeControl", "AuthorityControl", "InputIntegrityControl",
     "ReversibilityControl", "LegibilityControl", "StateAdmissibilityControl",
     "ObservabilityControl", "ProvabilityControl",
 ]

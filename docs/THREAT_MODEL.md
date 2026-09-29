@@ -115,10 +115,9 @@ Components:
   agent. This one is about the target. An authorization can be perfectly
   provenanced and still be executed by a system that enforces a different
   boundary than the one declared; verifying who authorized an action says
-  nothing about what the target does with it. The reference `ScopeControl`
-  checks the resolved target against policy but does not yet probe the
-  target's enforcement. That is a production upgrade, not a property of this
-  kernel.
+  nothing about what the target does with it. `ScopeControl` now accepts an
+  active `probe` callback, and `ProbedScopeControl` caches probe verdicts per
+  action class to fail closed before divergence touches production state.
 - **Availability.** Fail-closed is a safety choice with an availability cost.
   This framework chooses safety; your SLOs may require compensating design.
 
