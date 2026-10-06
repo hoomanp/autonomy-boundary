@@ -37,6 +37,16 @@ The **Autonomy Boundary Framework (ABF)** is the deterministic Policy Enforcemen
 * **Sub-Millisecond & Zero-LLM**:  
   ABF executes in **`< 1 millisecond`** with **zero LLM calls** in the enforcement path. It is deterministic cryptography and policy, not a slow, probabilistic LLM-as-a-judge.
 
+### 🛡️ The Kernel Analogy: Ring 0 vs. Ring 3
+
+| Operating System Architecture | Autonomy Boundary Framework (Ring 0) | AI Agent Userland (Ring 3) |
+| :--- | :--- | :--- |
+| **Syscall Gate** | Tool Call / API Proposal Gateway | Probabilistic Prompt Generation |
+| **UID / Capability Masks** | Signed Allowlists & Chain Quotas | Agent Self-Reported Intent (Untrusted) |
+| **Memory Page Fault / Segfault** | Fail-Closed Action Denial & Halt | Hallucination or Malicious Drift |
+| **Hardware Ring Isolation** | Deterministic SHA-256 Invariants | Unconstrained Execution Environment |
+| **Microsecond Dispatch** | **`< 0.85 ms` PEP Latency** | Multi-Second Probabilistic LLM-as-a-Judge |
+
 ### Empirical Latency & Governance Benchmark
 
 | Evaluation Metric | Probabilistic LLM-as-a-Judge | Autonomy Boundary Framework (Ring 0) | Advantage |
@@ -264,6 +274,24 @@ $$\text{Proof Triple} = (\text{Approved Intent Hash} \times \text{In-Force Grant
 
 * **Split Custody**: The Policy Enforcement Point (PEP) must *produce* the evidence—it is the only component that sees the full binding—but must *not hold* it. If the PEP holds the proof, the record is a report written by the entity under investigation.
 * **External Anchoring**: The ledger root must anchor in a separate trust domain (e.g. S3 Object Lock, RFC 3161 Timestamp Authority, or external transparency log).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Agent as Agent Runtime (Ring 3)
+    participant PEP as Autonomy Boundary PEP (Ring 0)
+    participant Exec as Execution Plane (APIs / DB)
+    participant Ledger as Hash-Chained Ledger
+    participant Anchor as External Trust Domain (S3 Lock / RFC 3161)
+
+    Agent->>PEP: Propose Action (Canonical Intent Tuple)
+    PEP->>PEP: Assert Scope, Authority, Input & Legibility (< 0.85ms)
+    PEP->>Exec: Dispatch Authorized Action (Permitted)
+    Exec-->>PEP: Return Post-Execution State Effect
+    PEP->>PEP: Synthesize Proof Triple (Approved Intent × Grant × Instance ID)
+    PEP->>Ledger: Append Immutable Entry (SHA-256 Hash Chained)
+    Ledger->>Anchor: Publish Cryptographic Root Block
+```
 
 ---
 
