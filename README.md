@@ -297,7 +297,7 @@ pip install -e ".[dev]"
 # 2. Run test suite (72 passed in < 0.2s)
 pytest -q
 
-# 3. Run v0.4 JEPA + Cyclic Graph + Merkle Memory + Frontier Reasoning + Ed25519 demo
+# 3. Run v0.4 architecture extensions demo (JEPA + Graph + Merkle Memory + Reasoning Harness)
 PYTHONPATH=src python3 examples/jepa_graph_frontier_demo.py
 
 # 4. Run OWASP Agentic Security Initiative (ASI-1 through ASI-8) coverage matrix
@@ -342,7 +342,7 @@ sequenceDiagram
 * [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md): Formal RFC specification (ABF-RFC-01) covering canonical schemas for Intent, Approval Token, Proof Triple, and Ledger Record.
 * [`docs/framework.md`](docs/framework.md): Comprehensive architectural phasing, control deep-dives, and boundary scopes.
 * [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md): Adversaries (A1–A9), trust assumptions, and explicit non-goals.
-* [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md): Agentic skill definition for LLMs and autonomous orchestrators.
+* [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md): Standardized skill definition for agent runtimes and orchestrators.
 * [`examples/harnesses/`](examples/harnesses/): Optional SDK wrappers for LangChain, Anthropic, OpenAI, Gemini, OpenRouter Python, and TypeScript Agent SDK.
 
 ---
@@ -351,9 +351,9 @@ sequenceDiagram
 
 **Hooman Parta**: [linkedin.com/in/hooman-parta](https://www.linkedin.com/in/hooman-parta)
 
-Engineering executive (CISSP) with 25+ years building and leading cloud, platform, and AI infrastructure organizations at Fortune-100 and hyperscale scope (50+ engineers across NA/EMEA/APAC, $40M+ compute budgets, ~1B monthly real-time AI inference sessions under `< 100 ms` latency SLAs).
+Engineering executive (CISSP) with 25+ years building and leading cloud, platform, and AI infrastructure organizations at Fortune-100 and hyperscale scope (50+ engineers across NA/EMEA/APAC, $40M+ compute budgets, ~1B monthly real-time inference sessions under `< 100 ms` latency SLAs).
 
-Companion essays on LinkedIn: *What Changed This Month* (AI infrastructure & unit economics) and *The Autonomy Boundary* series.
+Engineering publications: *The Autonomy Boundary* series on execution governance and systems architecture.
 
 This repository is the canonical home for the framework: specifications, reference kernel, MCP gateway, zero-dependency demos, and public review via [issues](https://github.com/hoomanp/autonomy-boundary/issues).
 
