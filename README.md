@@ -1,59 +1,60 @@
 # The Autonomy Boundary Framework (ABF)
 
 **Eight controls for auditable agent autonomy.**  
-*The line where a system stops assisting and starts acting — and the mathematical proof that it stayed inside it.*
+*The boundary where an autonomous system transitions from proposing to executing, with deterministic verification that execution remains within policy.*
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: 64 Passing](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)](tests/)
-[![Latency: < 1ms](https://img.shields.io/badge/latency-%3C%201ms%20(Zero--LLM)-purple.svg)](#the-mental-model-ring-0-for-ai-agents)
+[![Tests: 72 Passing](https://img.shields.io/badge/tests-72%20passing-brightgreen.svg)](tests/)
+[![Latency: < 1ms](https://img.shields.io/badge/latency-%3C%201ms%20(Deterministic)-purple.svg)](#the-mental-model-ring-0-for-autonomous-systems)
 [![OWASP ASI: 8/8 Coverage](https://img.shields.io/badge/OWASP%20ASI-8%2F8%20Verified-blue.svg)](evals/owasp_asi_coverage.py)
 [![MCP Compliant](https://img.shields.io/badge/MCP-Standard%20Gateway-orange.svg)](src/abf/mcp.py)
+[![Architecture: v0.4](https://img.shields.io/badge/v0.4-JEPA%20%7C%20Graph%20%7C%20Merkle%20Memory%20%7C%20Ed25519-teal.svg)](#v04-architecture-extensions)
 
 ---
 
-> ### *"Approved must equal authorized. The world behind that approval must still deserve to govern."*
+> ### *"Approved must equal authorized. The state behind an approval must still govern at execution time."*
 
-A wrong model answer is an edit. A wrong **action** is an incident, a breach notice, a regulatory penalty, or a court finding.
+A wrong model completion is an edit. An unauthorized action is an outage, a security incident, or an audit failure.
 
-**Guardrails police words; Autonomy Boundaries police actions.**
+**Guardrails filter text generation. Autonomy boundaries govern tool execution.**
 
-As enterprises transition from generative chat (assist) and copilots (augment) to autonomous agents that mutate databases, execute code, trigger payments, and modify infrastructure, traditional authorization falls apart at the seams.
+As systems transition from conversational assistants to autonomous runtimes that mutate databases, run shell commands, trigger payments, and modify cloud infrastructure, traditional application-layer authorization fails under three conditions:
 
-1. **The Consent Divergence Problem (Legibility)**: Disclosed across major coding agents in the SymJack and TrustFall incidents, the action a human approves on screen and the action the runtime executes can diverge. The user approves *"trust this folder"*; the system executes arbitrary code.
-2. **The Target Enforcement Gap (Scope)**: Exposed in the September 2026 OpenAI DSEWiki incident, a harness declared a "read-only" scope, but the target endpoint mutated state on visit—flooding 18,000 public posts without violating any harness-internal labels.
-3. **The State Drift Problem (State Admissibility)**: Every control passes and an approval is valid, yet the action is catastrophic because the world state that justified it has gone stale (e.g. an account frozen by compliance seconds after sign-off).
+1. **Consent Divergence (Legibility):** The action approved in a user interface differs from the command dispatched to the runtime.
+2. **Target Scope Gap (Scope):** An agent harness declares read-only intent, but calling the target endpoint causes state mutations downstream.
+3. **State Drift (State Admissibility):** An action approval is cryptographically valid, but the system conditions that justified approval changed prior to execution (for example, an account frozen by risk control after approval but before settlement).
 
-The **Autonomy Boundary Framework (ABF)** is the deterministic Policy Enforcement Point (PEP) and tamper-evident custody plane that makes AI agent autonomy **provable** to examiners, auditors, CISOs, clinicians, and courts.
+The **Autonomy Boundary Framework (ABF)** is a deterministic Policy Enforcement Point (PEP) and tamper-evident custody plane that provides auditable non-repudiation for agent execution.
 
 ---
 
-## The Mental Model: Ring 0 for AI Agents
+## The Mental Model: Ring 0 for Autonomous Systems
 
-* **The OS Kernel Analogy (Ring 0 vs. Ring 3)**:  
-  The LLM is untrusted userland (Ring 3). The Autonomy Boundary is the OS kernel (Ring 0). When a userland process calls a syscall, the kernel does not ask the process whether it is well-intentioned—it deterministically asserts UID, capability masks, file descriptors, and quota budgets.
-* **Zero Trust for Agent Actions**:  
-  Never trust the agent's self-reported intent; always verify the post-resolution semantic effect immediately before execution at the enforcement point.
-* **Sub-Millisecond & Zero-LLM**:  
-  ABF executes in **`< 1 millisecond`** with **zero LLM calls** in the enforcement path. It is deterministic cryptography and policy, not a slow, probabilistic LLM-as-a-judge.
+* **The Kernel Analogy (Ring 0 vs. Ring 3):**  
+  The generative model operates as untrusted userland (Ring 3). The Autonomy Boundary operates as the kernel (Ring 0). When a process issues a syscall, the kernel does not rely on process self-reporting: it evaluates capability masks, file descriptors, and quotas.
+* **Zero Trust for Tool Actions:**  
+  Verify the post-resolution semantic effect immediately before execution at the enforcement point rather than trusting model intent declarations.
+* **Sub-Millisecond Deterministic PEP:**  
+  ABF executes in **`< 1 millisecond`** with zero model calls in the enforcement path. Policy evaluation relies on cryptographic hashing, state diffs, and capability graph validation.
 
-### The Kernel Analogy: Ring 0 vs. Ring 3
+### Operating System Analogy: Ring 0 vs. Ring 3
 
-| Operating System Architecture | Autonomy Boundary Framework (Ring 0) | AI Agent Userland (Ring 3) |
+| Operating System Architecture | Autonomy Boundary Framework (Ring 0) | Agent Userland (Ring 3) |
 | :--- | :--- | :--- |
-| **Syscall Gate** | Tool Call / API Proposal Gateway | Probabilistic Prompt Generation |
+| **Syscall Gate** | Tool Call / API Proposal Gateway | Model-Generated Tool Proposals |
 | **UID / Capability Masks** | Signed Allowlists & Chain Quotas | Agent Self-Reported Intent (Untrusted) |
-| **Memory Page Fault / Segfault** | Fail-Closed Action Denial & Halt | Hallucination or Malicious Drift |
+| **Memory Page Fault / Segfault** | Fail-Closed Action Denial & Halt | Policy Violation or Execution Drift |
 | **Hardware Ring Isolation** | Deterministic SHA-256 Invariants | Unconstrained Execution Environment |
-| **Microsecond Dispatch** | **`< 0.85 ms` PEP Latency** | Multi-Second Probabilistic LLM-as-a-Judge |
+| **Microsecond Dispatch** | **`< 0.85 ms` PEP Latency** | Multi-Second Generative Model-as-a-Judge |
 
 ### Empirical Latency & Governance Benchmark
 
-| Evaluation Metric | Probabilistic LLM-as-a-Judge | Autonomy Boundary Framework (Ring 0) | Advantage |
+| Evaluation Metric | Generative Model-as-a-Judge | Autonomy Boundary Framework (Ring 0) | Advantage |
 | :--- | :--- | :--- | :--- |
 | **Enforcement Latency** | 1,200 – 3,500 ms (API network hop) | **< 0.85 ms** (In-memory deterministic PEP) | **~3,000x faster** |
-| **Marginal Inference Cost** | \$0.003 – \$0.015 per action check | **\$0.00000 (Zero LLM calls)** | **100% cost reduction** |
-| **Tamper & Jailbreak Defense** | Vulnerable to adversarial prompt drift | **Cryptographic SHA-256 + Capability Graph** | **Provable guarantee** |
+| **Marginal Inference Cost** | \$0.003 – \$0.015 per action check | **\$0.00000 (Zero model calls)** | **100% cost reduction** |
+| **Tamper Defense** | Vulnerable to adversarial prompt drift | **Cryptographic SHA-256 + Capability Graph** | **Provable guarantee** |
 | **Audit Custody & Proof** | Unverified text logs | **Append-only hash-chained ledger** | **Mathematical non-repudiation** |
 | **Enforcement Invariant** | Fail Open on timeout / token exhaustion | **Fail Closed (Zero action without proof)** | **Safety invariant** |
 
@@ -75,7 +76,7 @@ Where:
 ```mermaid
 flowchart TD
     subgraph AgentRuntime["Agent Userland (Untrusted)"]
-        LLM["AI Agent / Chatbot / LLM"] --> Proposal["Action Proposal (Canonical Intent)"]
+        AgentNode["Agent Runtime (Untrusted)"] --> Proposal["Action Proposal (Canonical Intent)"]
     end
 
     Proposal --> PEP["Autonomy Boundary PEP (< 1ms, Deterministic)"]
@@ -192,8 +193,8 @@ Run the runnable demo:
 python examples/mcp_boundary.py
 ```
 
-### 2. Importable Skill for AI Agents & Chatbots
-Equip LangChain, CrewAI, AutoGen, OpenAI Assistant, or custom chatbots with self-governing runtime boundaries:
+### 2. Importable Skill for Agent Orchestrators
+Equip agent frameworks (LangGraph, CrewAI, AutoGen, OpenAI Assistant, or custom orchestrators) with self-governing runtime boundaries:
 
 ```python
 from abf.skill import AutonomyBoundarySkill
@@ -222,7 +223,45 @@ Run the runnable demo:
 python examples/skill_agent.py
 ```
 
-*For agent system prompts, see the standardized [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md).*
+*For agent skill definitions, see [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md).*
+
+---
+
+## v0.4 Architecture Extensions
+
+Version `0.4.0` extends the reference kernel with five systems architecture primitives—implemented in pure Python 3.10+ with **zero external runtime dependencies**:
+
+### 1. JEPA World-State Energy Control ([`src/abf/controls/jepa.py`](src/abf/controls/jepa.py))
+Inspired by Joint-Embedding Predictive Architectures (I-JEPA / V-JEPA), `JEPAWorldStateControl` evaluates state transitions via sub-millisecond latent state prediction and energy-based trajectory gating instead of multi-second generative model evaluations:
+- **Latent State Encoder** $s_t = E(x_t) \in \mathbb{R}^d$: Encodes live operational metrics (financial exposure, blast radius, privilege elevation, data sensitivity, destructiveness, external egress, volatility) into a continuous latent vector.
+- **Action-Conditioned Predictor** $\hat{s}_{t+1} = P(s_t, a_t) \in \mathbb{R}^d$: Predicts the post-action world state before any tool executes.
+- **Safety Manifold Barrier Energy** $\mathcal{E}(s_t, a_t, \hat{s}_{t+1}) = \alpha \|\hat{s}_{t+1} - s_t\|_2^2 + \beta \sum_k \max(0, \hat{s}_{t+1,k} - u_k)^2 \le \tau$: Blocks catastrophic transitions in `< 0.2 ms` and supports custom PyTorch / ONNX Runtime embedding callbacks (`encoder_fn`, `predictor_fn`).
+
+### 2. Cyclic Agent Graph, `BoundaryInterrupt` & Causal DAG ([`src/abf/graph.py`](src/abf/graph.py))
+First-class orchestration governance for cyclic agent loops (LangGraph, AutoGen, ReAct):
+- **Suspend / Resume Protocol (`BoundaryInterrupt`)**: Instead of auto-minting approvals inside tool wrappers, irreversible actions lacking human sign-off raise `BoundaryInterrupt` with a serialized checkpoint. After an external operator signs the token, `graph.resume(checkpoint_id, approval=token)` re-verifies `StateAdmissibilityControl` against state drift during the human wait window before executing.
+- **Causal DAG Lineage (`CausalDAGTracker`)**: Cryptographically binds `parent_intent_id`, monotonically increasing `step_index`, and `branch_id` into every `Intent` hash.
+- **Runaway Loop & Atomic Budget Coordination (`CycleDetector`, `BudgetCoordinator`)**: Halts cyclic tool-call oscillation and enforces thread-safe atomic `chain_budget` reservation across concurrent fan-out branches.
+
+### 3. Tiered Merkle Memory & Provenance Taint Tracking ([`src/abf/memory.py`](src/abf/memory.py))
+Addresses whole-store hashing overhead and second-order prompt injection via retrieved or persisted state:
+- **Procedural Tier**: Write-locked system rules and policy definitions requiring explicit `admin_approval` to mutate.
+- **Semantic KV Tier**: Binary Merkle tree with $O(\log N)$ cryptographic inclusion proofs (`prove_key` / `MerkleProof.verify`) and selective key snapshotting (`snapshot_keys`).
+- **Episodic Tier with `TaintLevel`**: Tags retrieved chunks as `TRUSTED`, `USER`, or `UNTRUSTED_EXTERNAL`. Recalling `UNTRUSTED_EXTERNAL` records into context automatically blocks high-impact actions unless accompanied by an explicit human approval token.
+
+### 4. Reasoning Trace Harness ([`src/abf/frontier.py`](src/abf/frontier.py))
+Captures and binds model reasoning traces (e.g. Claude Extended Thinking, OpenAI o-series, Gemini Thinking, DeepSeek-R1):
+- **Trace-to-Intent Binding (`reasoning_hash`)**: Extracts and hashes pre-action reasoning traces into `Intent.reasoning_hash`, establishing an immutable four-stage audit chain (`reasoning_hash -> intent_hash -> approval_signature -> execution_record`) and validating trace alignment via `ReasoningAlignmentControl`.
+- **All-or-Nothing Parallel Tool Batching (`evaluate_parallel_batch`)**: Evaluates $K$ parallel tool calls atomically across cumulative budget and JEPA state trajectories—preventing split-transaction evasion (e.g., $4 \times \$250$ parallel refunds to evade a $\$750$ manifold bound).
+
+### 5. Asymmetric Ed25519 Custody & Concurrent Ledger ([`src/abf/crypto.py`](src/abf/crypto.py), [`src/abf/ledger.py`](src/abf/ledger.py))
+- **Zero-Dependency RFC 8032 Ed25519 (`Ed25519Keypair`)**: True split custody—the agent runtime and human approver sign with private keys (`sign_ed25519`, `approve(..., private_key=...)`), while `AuthorityControl(public_key=...)` and `LegibilityControl(approver_public_key=...)` hold **only** 32-byte public verification keys.
+- **Multi-Thread & Multi-Process Safe Ledger**: `Ledger.append()` serializes concurrent writers via `threading.RLock` and POSIX `fcntl.flock` file locks while refreshing the tail hash on disk.
+
+Run the complete v0.4 architectural demo:
+```bash
+PYTHONPATH=src python3 examples/jepa_graph_frontier_demo.py
+```
 
 ---
 
@@ -255,13 +294,16 @@ git clone https://github.com/hoomanp/autonomy-boundary.git
 cd autonomy-boundary
 pip install -e ".[dev]"
 
-# 2. Run test suite (64 passed in < 0.1s)
+# 2. Run test suite (72 passed in < 0.2s)
 pytest -q
 
-# 3. Run OWASP Agentic Security Initiative (ASI-1 through ASI-8) coverage matrix
+# 3. Run v0.4 JEPA + Cyclic Graph + Merkle Memory + Frontier Reasoning + Ed25519 demo
+PYTHONPATH=src python3 examples/jepa_graph_frontier_demo.py
+
+# 4. Run OWASP Agentic Security Initiative (ASI-1 through ASI-8) coverage matrix
 python evals/owasp_asi_coverage.py
 
-# 4. Run end-to-end enterprise refund scenario
+# 5. Run end-to-end enterprise refund scenario
 python examples/refund_agent.py
 ```
 
@@ -272,8 +314,8 @@ python examples/refund_agent.py
 A moment-of-action audit record only counts if three facts are cryptographically bound together:
 $$\text{Proof Triple} = (\text{Approved Intent Hash} \times \text{In-Force Grant} \times \text{Instance Identity})$$
 
-* **Split Custody**: The Policy Enforcement Point (PEP) must *produce* the evidence—it is the only component that sees the full binding—but must *not hold* it. If the PEP holds the proof, the record is a report written by the entity under investigation.
-* **External Anchoring**: The ledger root must anchor in a separate trust domain (e.g. S3 Object Lock, RFC 3161 Timestamp Authority, or external transparency log).
+* **Split Custody**: The Policy Enforcement Point (PEP) must produce the evidence (it is the only component that observes the full binding) but must not hold it. Storing the proof inside the enforcement component compromises independent auditability.
+* **External Anchoring**: The ledger root must anchor in a separate trust domain (e.g. S3 Object Lock, RFC 3161 Timestamp Authority, or an external transparency log).
 
 ```mermaid
 sequenceDiagram
@@ -297,17 +339,17 @@ sequenceDiagram
 
 ## Specification & Standards
 
-* [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) — Formal RFC specification (ABF-RFC-01) covering canonical schemas for Intent, Approval Token, Proof Triple, and Ledger Record.
-* [`docs/framework.md`](docs/framework.md) — Comprehensive architectural phasing, control deep-dives, and boundary scopes.
-* [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) — Adversaries (A1–A9), trust assumptions, and explicit non-goals.
-* [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md) — Agentic skill definition for LLMs and autonomous orchestrators.
-* [`examples/harnesses/`](examples/harnesses/) — Optional SDK wrappers for LangChain, Anthropic, OpenAI, Gemini, OpenRouter Python, and TypeScript Agent SDK.
+* [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md): Formal RFC specification (ABF-RFC-01) covering canonical schemas for Intent, Approval Token, Proof Triple, and Ledger Record.
+* [`docs/framework.md`](docs/framework.md): Comprehensive architectural phasing, control deep-dives, and boundary scopes.
+* [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md): Adversaries (A1–A9), trust assumptions, and explicit non-goals.
+* [`skills/autonomy-boundary/SKILL.md`](skills/autonomy-boundary/SKILL.md): Agentic skill definition for LLMs and autonomous orchestrators.
+* [`examples/harnesses/`](examples/harnesses/): Optional SDK wrappers for LangChain, Anthropic, OpenAI, Gemini, OpenRouter Python, and TypeScript Agent SDK.
 
 ---
 
 ## Author & Enterprise Background
 
-**Hooman Parta** — [linkedin.com/in/hooman-parta](https://www.linkedin.com/in/hooman-parta)
+**Hooman Parta**: [linkedin.com/in/hooman-parta](https://www.linkedin.com/in/hooman-parta)
 
 Engineering executive (CISSP) with 25+ years building and leading cloud, platform, and AI infrastructure organizations at Fortune-100 and hyperscale scope (50+ engineers across NA/EMEA/APAC, $40M+ compute budgets, ~1B monthly real-time AI inference sessions under `< 100 ms` latency SLAs).
 
@@ -319,4 +361,4 @@ This repository is the canonical home for the framework: specifications, referen
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT (see [`LICENSE`](LICENSE)).
