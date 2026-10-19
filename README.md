@@ -37,7 +37,7 @@ The **Autonomy Boundary Framework (ABF)** is the deterministic Policy Enforcemen
 * **Sub-Millisecond & Zero-LLM**:  
   ABF executes in **`< 1 millisecond`** with **zero LLM calls** in the enforcement path. It is deterministic cryptography and policy, not a slow, probabilistic LLM-as-a-judge.
 
-### 🛡️ The Kernel Analogy: Ring 0 vs. Ring 3
+### The Kernel Analogy: Ring 0 vs. Ring 3
 
 | Operating System Architecture | Autonomy Boundary Framework (Ring 0) | AI Agent Userland (Ring 3) |
 | :--- | :--- | :--- |
@@ -149,7 +149,7 @@ The framework organizes runtime governance into three lifecycle phases:
 
 ---
 
-## 🛡️ OWASP Agentic Security Initiative (ASI) Coverage Matrix
+## OWASP Agentic Security Initiative (ASI) Coverage Matrix
 
 The framework provides verified, executable mitigation across all 8 OWASP ASI risk categories (validated in [`evals/owasp_asi_coverage.py`](evals/owasp_asi_coverage.py)):
 
@@ -309,10 +309,11 @@ sequenceDiagram
 
 **Hooman Parta** — [linkedin.com/in/hooman-parta](https://www.linkedin.com/in/hooman-parta)
 
-25+ years securing cloud platforms and distributed systems at Fortune-100 scale.  
-Companion essays on LinkedIn: *The Autonomy Boundary* series and *The Last Mile* (finance, healthcare, retail, and critical infrastructure).
+Engineering executive (CISSP) with 25+ years building and leading cloud, platform, and AI infrastructure organizations at Fortune-100 and hyperscale scope (50+ engineers across NA/EMEA/APAC, $40M+ compute budgets, ~1B monthly real-time AI inference sessions under `< 100 ms` latency SLAs).
 
-This repository is the canonical home for the framework — specifications, reference kernel, MCP gateway, demos, and public review via [issues](https://github.com/hoomanp/autonomy-boundary/issues).
+Companion essays on LinkedIn: *What Changed This Month* (AI infrastructure & unit economics) and *The Autonomy Boundary* series.
+
+This repository is the canonical home for the framework: specifications, reference kernel, MCP gateway, zero-dependency demos, and public review via [issues](https://github.com/hoomanp/autonomy-boundary/issues).
 
 ---
 
