@@ -312,7 +312,7 @@ make eval
 ```text
 ============================= test session starts ==============================
 platform darwin -- Python 3.14.10, pytest-9.1.1, pluggy-1.6.0
-rootdir: /Users/hoomanparta/Documents/Codes/autonomy-boundary
+rootdir: /workspace/autonomy-boundary
 configfile: pyproject.toml
 collected 73 items
 
