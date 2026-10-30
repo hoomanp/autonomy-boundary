@@ -40,12 +40,14 @@ def approve(
     approver: str,
     *,
     key: bytes | None = None,
+    private_key: bytes | None = None,
     timestamp: str | None = None,
 ) -> dict[str, Any]:
     """A human approval token, bound to the intent hash it was shown.
 
-    If `key` is provided, computes an HMAC-SHA256 signature over
-    approver:approved_hash:timestamp to prevent approval token forgery.
+    Supports either symmetric HMAC (`key`) or asymmetric Ed25519 (`private_key`).
+    With Ed25519, the boundary holds only `approver_public_key` and cannot
+    self-mint approval tokens.
     """
     token: dict[str, Any] = {
         "approver": approver,
@@ -55,8 +57,12 @@ def approve(
     }
     if timestamp:
         token["timestamp"] = timestamp
-    if key is not None:
-        payload = f"{approver}:{intent.hash}:{timestamp or ''}".encode()
+    payload = f"{approver}:{intent.hash}:{timestamp or ''}".encode("utf-8")
+    if private_key is not None:
+        from abf.crypto import ed25519_sign
+
+        token["signature"] = f"ed25519:{ed25519_sign(private_key, payload)}"
+    elif key is not None:
         token["signature"] = hmac.new(key, payload, hashlib.sha256).hexdigest()
     return token
 
@@ -68,9 +74,11 @@ class LegibilityControl(Control):
         self,
         approver_key: bytes | None = None,
         *,
+        approver_public_key: bytes | None = None,
         require_approval_signature: bool = False,
     ) -> None:
         self.approver_key = approver_key
+        self.approver_public_key = approver_public_key
         self.require_approval_signature = require_approval_signature
 
     def check(self, intent: Intent, context: dict[str, Any]) -> ControlResult:
@@ -78,15 +86,25 @@ class LegibilityControl(Control):
         if approval is None:
             return self.allow("no approval present; reversibility governs whether one is required")
 
-        if self.approver_key is not None or self.require_approval_signature:
+        if (
+            self.approver_key is not None
+            or self.approver_public_key is not None
+            or self.require_approval_signature
+        ):
             sig = approval.get("signature")
             if not sig:
                 return self.deny("approval token missing cryptographic signature")
-            if self.approver_key is not None:
-                approver = approval.get("approver", "")
-                approved_hash = approval.get("approved_hash", "")
-                timestamp = approval.get("timestamp", "")
-                payload = f"{approver}:{approved_hash}:{timestamp}".encode()
+            approver = approval.get("approver", "")
+            approved_hash = approval.get("approved_hash", "")
+            timestamp = approval.get("timestamp", "")
+            payload = f"{approver}:{approved_hash}:{timestamp}".encode("utf-8")
+            if self.approver_public_key is not None:
+                from abf.crypto import ed25519_verify
+
+                raw_sig = sig[len("ed25519:") :] if str(sig).startswith("ed25519:") else str(sig)
+                if not ed25519_verify(self.approver_public_key, payload, raw_sig):
+                    return self.deny("approval token Ed25519 signature invalid")
+            elif self.approver_key is not None:
                 expected = hmac.new(self.approver_key, payload, hashlib.sha256).hexdigest()
                 if not hmac.compare_digest(sig, expected):
                     return self.deny("approval token signature invalid")

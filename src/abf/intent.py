@@ -90,6 +90,10 @@ class Intent:
     expiry: str = ""
     state_deps: Mapping[str, str] = field(default_factory=dict)
     validity_window: str = ""
+    parent_intent_id: str = ""
+    step_index: int = 0
+    branch_id: str = ""
+    reasoning_hash: str = ""
 
     @property
     def effect_target(self) -> str:
@@ -97,7 +101,7 @@ class Intent:
         return self.resolved_target or self.resource
 
     def body(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "intent_id": self.intent_id,
             "action": self.action,
             "resource": self.resource,
@@ -110,6 +114,15 @@ class Intent:
             "state_deps": dict(self.state_deps),
             "validity_window": self.validity_window,
         }
+        if self.parent_intent_id:
+            payload["parent_intent_id"] = self.parent_intent_id
+        if self.step_index:
+            payload["step_index"] = self.step_index
+        if self.branch_id:
+            payload["branch_id"] = self.branch_id
+        if self.reasoning_hash:
+            payload["reasoning_hash"] = self.reasoning_hash
+        return payload
 
     @property
     def hash(self) -> str:
@@ -122,3 +135,20 @@ class Intent:
     def verify_signature(self, key: bytes) -> bool:
         expected = hmac.new(key, canonical_json(self.body()).encode(), hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, self.signature)
+
+    def sign_ed25519(self, private_key: bytes) -> "Intent":
+        """Sign canonical intent body with an Ed25519 32-byte private key seed."""
+        from abf.crypto import ed25519_sign
+
+        sig = ed25519_sign(private_key, canonical_json(self.body()).encode("utf-8"))
+        return replace(self, signature=f"ed25519:{sig}")
+
+    def verify_ed25519(self, public_key: bytes) -> bool:
+        """Verify Ed25519 signature using ONLY the 32-byte public key."""
+        from abf.crypto import ed25519_verify
+
+        sig = self.signature
+        if sig.startswith("ed25519:"):
+            sig = sig[len("ed25519:") :]
+        return ed25519_verify(public_key, canonical_json(self.body()).encode("utf-8"), sig)
+

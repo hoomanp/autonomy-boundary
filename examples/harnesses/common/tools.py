@@ -48,6 +48,7 @@ class ToolRuntime:
         store: Store,
         chain_budget: int = 8,
         approver: str = "harness:operator",
+        require_explicit_approval: bool = False,
     ) -> None:
         self.boundary = boundary
         self.key = key
@@ -55,6 +56,7 @@ class ToolRuntime:
         self.store = store
         self.chain_budget = chain_budget
         self.approver = approver
+        self.require_explicit_approval = require_explicit_approval
         self.task_spend = 0
 
     def make_intent(
@@ -89,7 +91,11 @@ class ToolRuntime:
     ) -> dict[str, Any]:
         remaining = max(self.chain_budget - self.task_spend, 0)
         token = approval
-        if token is None and intent.action == "refund.issue":
+        if (
+            token is None
+            and intent.action == "refund.issue"
+            and not self.require_explicit_approval
+        ):
             token = approve(intent, self.approver)
         return {
             "approval": token,

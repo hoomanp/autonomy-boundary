@@ -7,10 +7,13 @@ from abf.controls.legibility import LegibilityControl
 from abf.controls.state_admissibility import StateAdmissibilityControl
 from abf.controls.observability import ObservabilityControl
 from abf.controls.provability import ProvabilityControl
+from abf.controls.jepa import JEPAPrediction, JEPAWorldStateControl, LatentSafetyManifold
 
 __all__ = [
     "Control", "ControlResult",
     "ScopeControl", "ProbedScopeControl", "AuthorityControl", "InputIntegrityControl",
     "ReversibilityControl", "LegibilityControl", "StateAdmissibilityControl",
     "ObservabilityControl", "ProvabilityControl",
+    "JEPAWorldStateControl", "JEPAPrediction", "LatentSafetyManifold",
 ]
+

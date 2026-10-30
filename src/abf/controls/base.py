@@ -14,6 +14,10 @@ class ControlResult:
     reason: str
     detail: dict[str, Any] | None = None
 
+    @property
+    def details(self) -> dict[str, Any]:
+        return self.detail or {}
+
 
 class Control(ABC):
     """A composable guard. Controls fail closed: any exception is a deny."""

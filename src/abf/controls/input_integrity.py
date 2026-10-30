@@ -32,10 +32,11 @@ class InputIntegrityControl(Control):
         patterns: Sequence[re.Pattern[str]] | None = None,
         *,
         validators: Sequence[ValidatorFn] | None = None,
+        custom_validators: Sequence[ValidatorFn] | None = None,
         screen_target: bool = True,
     ) -> None:
         self.patterns = list(patterns if patterns is not None else DEFAULT_SUSPECT_PATTERNS)
-        self.validators = list(validators or [])
+        self.validators = list(validators or []) + list(custom_validators or [])
         self.screen_target = screen_target
 
     def check(self, intent: Intent, context: dict[str, Any]) -> ControlResult:

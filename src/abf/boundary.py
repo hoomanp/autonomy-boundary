@@ -69,6 +69,17 @@ class AutonomyBoundary:
         )
         return decision
 
+    def record_execution(self, intent: Intent, outcome: Any) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "intent_hash": intent.hash,
+            "outcome": repr(outcome),
+        }
+        if intent.reasoning_hash:
+            payload["reasoning_hash"] = intent.reasoning_hash
+        if intent.parent_intent_id:
+            payload["parent_intent_id"] = intent.parent_intent_id
+        return self.ledger.append("executed", payload)
+
     def execute(
         self,
         intent: Intent,
@@ -80,5 +91,6 @@ class AutonomyBoundary:
             denied = decision.denials[0]
             raise PermissionError(f"boundary denied by {denied.control}: {denied.reason}")
         outcome = action_fn(intent)
-        self.ledger.append("executed", {"intent_hash": intent.hash, "outcome": repr(outcome)})
+        self.record_execution(intent, outcome)
         return outcome
+

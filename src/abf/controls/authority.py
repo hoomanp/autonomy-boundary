@@ -17,18 +17,23 @@ class AuthorityControl(Control):
     def __init__(
         self,
         allowed_actions: list[str],
-        signing_key: bytes,
+        signing_key: bytes = b"",
         *,
+        public_key: bytes | None = None,
         capability_envelope: Iterable[str] | None = None,
         chain_budget: int | None = None,
     ) -> None:
         self.allowed_actions = set(allowed_actions)
         self.signing_key = signing_key
+        self.public_key = public_key
         self.capability_envelope = set(capability_envelope) if capability_envelope is not None else None
         self.chain_budget = chain_budget
 
     def check(self, intent: Intent, context: dict[str, Any]) -> ControlResult:
-        if not intent.verify_signature(self.signing_key):
+        if self.public_key is not None:
+            if not intent.verify_ed25519(self.public_key):
+                return self.deny("intent Ed25519 signature invalid or missing")
+        elif not intent.verify_signature(self.signing_key):
             return self.deny("intent signature invalid or missing")
         if intent.action not in self.allowed_actions:
             return self.deny("action not on allowlist", action=intent.action)
