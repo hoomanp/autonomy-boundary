@@ -1,15 +1,25 @@
 # The Autonomy Boundary Framework (ABF)
 
-**Eight controls for auditable agent autonomy.**  
-*The boundary where an autonomous system transitions from proposing to executing, with deterministic verification that execution remains within policy.*
+**Deterministic Ring 0 Policy Enforcement Point (PEP) for Autonomous AI Systems**  
+*The architectural boundary where autonomous runtimes transition from proposing to executing, eliminating compliance drift and unauthorized execution at sub-millisecond latency.*
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests: 72 Passing](https://img.shields.io/badge/tests-72%20passing-brightgreen.svg)](tests/)
-[![Latency: < 1ms](https://img.shields.io/badge/latency-%3C%201ms%20(Deterministic)-purple.svg)](#the-mental-model-ring-0-for-autonomous-systems)
+[![Latency: < 0.85ms](https://img.shields.io/badge/latency-%3C%200.85ms%20(Deterministic)-purple.svg)](#the-mental-model-ring-0-for-autonomous-systems)
 [![OWASP ASI: 8/8 Coverage](https://img.shields.io/badge/OWASP%20ASI-8%2F8%20Verified-blue.svg)](evals/owasp_asi_coverage.py)
 [![MCP Compliant](https://img.shields.io/badge/MCP-Standard%20Gateway-orange.svg)](src/abf/mcp.py)
 [![Architecture: v0.4](https://img.shields.io/badge/v0.4-JEPA%20%7C%20Graph%20%7C%20Merkle%20Memory%20%7C%20Ed25519-teal.svg)](#v04-architecture-extensions)
+
+---
+
+## Executive Summary: Architecture & Systemic Value
+
+| Dimension | Architectural Implementation & Strategic Value |
+| :--- | :--- |
+| **The Problem** | **Velocity Broken by Retroactive Governance:** Traditional enterprise compliance relies on manual audits, post-incident reviews, and out-of-band configuration scans. In autonomous agent environments that mutate databases, run shell commands, and execute API calls, manual compliance halts deployment velocity, while out-of-band configuration drift leaves production systems exposed to unconstrained blast radius and silent policy violations. |
+| **The Invariant** | **Approved Must Equal Authorized:** A wrong model completion is an edit; an unauthorized production action is an outage or security incident. ABF enforces deterministic cryptographic binding between architectural intent and production execution: canonical SHA-256 normalization, capability graphs, and Ed25519 signatures mathematically eliminate the gap between what a human or policy approves and what the agent actually executes. If live system dependencies drift prior to dispatch, the authorization grant invalidates fail-closed at runtime. |
+| **The Paved Road** | **Self-Service Compliance Guardrails:** Rather than a standalone script or a blocking governance bottleneck, ABF is architected as a self-service paved-road adapter. It integrates directly into CI/CD pipelines, Model Context Protocol (MCP) gateways, and standard agent SDKs (LangChain, Anthropic, OpenAI, Gemini). Engineering teams get automated compliance as code that runs in under 0.85 ms without secondary LLM eval latency or delivery friction. |
 
 ---
 
@@ -334,6 +344,19 @@ sequenceDiagram
     PEP->>Ledger: Append Immutable Entry (SHA-256 Hash Chained)
     Ledger->>Anchor: Publish Cryptographic Root Block
 ```
+
+---
+
+## The Paved Road: Self-Service CI/CD & Gateway Adapters
+
+ABF provides drop-in adapters so development teams incorporate autonomous governance into existing delivery pipelines and agent runtimes without manual compliance reviews or architectural rewrites:
+
+1. **CI/CD Compliance Gating (`.github/workflows/ci.yml`):**  
+   Automates pre-merge evaluation against the full OWASP Agentic Security Initiative (ASI-1 through ASI-8) matrix. Any policy drift or capability scope regression fails closed in CI before deployment.
+2. **Model Context Protocol (MCP) Gateway ([`src/abf/mcp.py`](src/abf/mcp.py)):**  
+   Acts as a standard MCP proxy between frontier model planners and downstream enterprise tools, deterministically validating tool invocations against capability graphs before dispatch.
+3. **Multi-Agent Runtime Adapters ([`examples/harnesses/`](examples/harnesses/)):**  
+   Provides lightweight, non-intrusive PEP bridges for LangChain, Anthropic, OpenAI, Gemini, and TypeScript agent SDKs, decoupling business logic from governance enforcement.
 
 ---
 
