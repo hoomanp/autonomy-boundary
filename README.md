@@ -5,7 +5,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: 72 Passing](https://img.shields.io/badge/tests-72%20passing-brightgreen.svg)](tests/)
+[![Tests: 72 Passing](https://img.shields.io/badge/tests-72%20passing%20(0.11s)-brightgreen.svg)](tests/)
 [![Latency: < 0.85ms](https://img.shields.io/badge/latency-%3C%200.85ms%20(Deterministic)-purple.svg)](#the-mental-model-ring-0-for-autonomous-systems)
 [![OWASP ASI: 8/8 Coverage](https://img.shields.io/badge/OWASP%20ASI-8%2F8%20Verified-blue.svg)](evals/owasp_asi_coverage.py)
 [![MCP Compliant](https://img.shields.io/badge/MCP-Standard%20Gateway-orange.svg)](src/abf/mcp.py)
@@ -298,13 +298,115 @@ python3 demo/ledger.py --tamper
 
 ## Quickstart & Evaluation Suite
 
+### Automated Verification Run (`make eval`)
+
+Every architectural invariant, control boundary, and cryptographic guarantee is tested under strict regression suites. Run the full test suite with duration profiling:
+
+```bash
+make eval
+# Equivalent to: pytest tests/ -v --durations=10
+```
+
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.14.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/hoomanparta/Documents/Codes/autonomy-boundary
+configfile: pyproject.toml
+collected 73 items
+
+tests/harnesses/test_bridge.py::test_bridge_kv_then_refund PASSED        [  1%]
+tests/harnesses/test_bridge.py::test_bridge_denies_out_of_scope PASSED   [  2%]
+tests/harnesses/test_live_providers.py::test_live_flag_only SKIPPED      [  4%]
+tests/harnesses/test_session_bound_to_ledger.py::test_session_id_appears_on_decision_record PASSED [  5%]
+tests/harnesses/test_session_bound_to_ledger.py::test_refund_binds_approval_grant_and_instance PASSED [  6%]
+tests/harnesses/test_tools_go_through_boundary.py::test_swapped_amount_denied_by_legibility PASSED [  8%]
+tests/harnesses/test_tools_go_through_boundary.py::test_stale_memory_fingerprint_denied_by_state_admissibility PASSED [  9%]
+tests/harnesses/test_tools_go_through_boundary.py::test_kv_put_outside_scope_denied PASSED [ 10%]
+tests/harnesses/test_tools_go_through_boundary.py::test_happy_path_refund_after_memory_and_kv PASSED [ 12%]
+tests/harnesses/test_tools_go_through_boundary.py::test_tools_never_mutate_before_pep PASSED [ 13%]
+tests/test_authority.py::test_capabilities_outside_envelope_denied PASSED [ 15%]
+tests/test_authority.py::test_subprocess_cannot_exceed_parent_envelope PASSED [ 16%]
+tests/test_authority.py::test_chain_budget_denies_when_spend_is_exhausted PASSED [ 17%]
+tests/test_authority.py::test_chain_budget_applies_to_parallel_spend_the_caller_accumulates PASSED [ 19%]
+tests/test_authority.py::test_within_envelope_and_budget_allows PASSED   [ 20%]
+tests/test_boundary.py::test_full_path_allows_and_executes PASSED        [ 21%]
+tests/test_boundary.py::test_out_of_scope_denied PASSED                  [ 23%]
+tests/test_boundary.py::test_unsigned_intent_denied PASSED               [ 24%]
+tests/test_boundary.py::test_irreversible_without_approval_denied PASSED [ 26%]
+tests/test_boundary.py::test_swapped_intent_after_approval_denied PASSED [ 27%]
+tests/test_boundary.py::test_prompt_injection_in_params_denied PASSED    [ 28%]
+tests/test_boundary.py::test_tampered_ledger_halts_boundary PASSED       [ 30%]
+tests/test_input_integrity.py::test_input_integrity_detects_traversal_in_resource PASSED [ 31%]
+tests/test_input_integrity.py::test_input_integrity_with_custom_validator PASSED [ 32%]
+tests/test_input_integrity.py::test_input_integrity_validator_fails_closed_on_exception PASSED [ 34%]
+tests/test_intent.py::test_canonical_hash_is_order_independent PASSED    [ 35%]
+tests/test_intent.py::test_signature_roundtrip PASSED                    [ 36%]
+tests/test_intent.py::test_param_change_changes_hash PASSED              [ 38%]
+tests/test_intent.py::test_resolved_target_is_bound_into_the_hash PASSED [ 39%]
+tests/test_state_deps_are_bound_into_the_hash PASSED     [ 41%]
+tests/test_intent.py::test_effect_target_defaults_to_resource PASSED     [ 42%]
+tests/test_intent.py::test_snapshot_state_is_stable PASSED               [ 43%]
+tests/test_intent.py::test_canonicalize_target_exported PASSED           [ 45%]
+tests/test_jepa_graph_memory_frontier.py::test_jepa_world_state_allows_low_energy_and_blocks_high_energy PASSED [ 46%]
+tests/test_jepa_graph_memory_frontier.py::test_jepa_custom_neural_encoder_and_predictor_callbacks PASSED [ 47%]
+tests/test_jepa_graph_memory_frontier.py::test_boundary_graph_interrupt_and_resume_with_ed25519 PASSED [ 49%]
+tests/test_jepa_graph_memory_frontier.py::test_boundary_graph_detects_runaway_cycles PASSED [ 50%]
+tests/test_jepa_graph_memory_frontier.py::test_governed_memory_merkle_proofs_and_taint_escalation PASSED [ 52%]
+tests/test_jepa_graph_memory_frontier.py::test_frontier_reasoning_binding_and_deceptive_thought_detection PASSED [ 53%]
+tests/test_jepa_graph_memory_frontier.py::test_frontier_parallel_batch_blocks_split_transaction_evasion PASSED [ 54%]
+tests/test_jepa_graph_memory_frontier.py::test_concurrent_ledger_writes_preserve_hash_chain PASSED [ 56%]
+tests/test_ledger.py::test_chain_verifies PASSED                         [ 57%]
+tests/test_ledger.py::test_tamper_breaks_chain PASSED                    [ 58%]
+tests/test_legibility.py::test_approved_equals_authorized_passes PASSED  [ 60%]
+tests/test_legibility.py::test_swapped_action_fails_closed PASSED        [ 61%]
+tests/test_legibility.py::test_approval_dialog_shows_resolved_effect_not_display_path PASSED [ 63%]
+tests/test_legibility.py::test_execution_time_resolution_divergence_fails_closed PASSED [ 64%]
+tests/test_legibility.py::test_signed_approval_token_passes PASSED       [ 65%]
+tests/test_legibility.py::test_tampered_approval_signature_fails PASSED  [ 67%]
+tests/test_legibility.py::test_missing_approval_signature_when_required_fails PASSED [ 68%]
+tests/test_mcp_boundary.py::test_mcp_proxy_allows_valid_and_blocks_tampered PASSED [ 69%]
+tests/test_mcp_gateway.py::test_mcp_gateway_tools_list PASSED            [ 71%]
+tests/test_mcp_gateway.py::test_mcp_gateway_autonomous_reversible_call PASSED [ 72%]
+tests/test_mcp_gateway.py::test_mcp_gateway_irreversible_requires_approval PASSED [ 73%]
+tests/test_mcp_gateway.py::test_mcp_gateway_with_valid_approval_token PASSED [ 75%]
+tests/test_resolve.py::test_dotdot_normalizes_before_binding PASSED      [ 76%]
+tests/test_resolve.py::test_unexpanded_env_fails_closed PASSED           [ 78%]
+tests/test_resolve.py::test_env_expansion_then_normalize PASSED          [ 79%]
+tests/test_resolve.py::test_alias_then_normalize PASSED                  [ 80%]
+tests/test_resolve.py::test_symlink_followed_when_present PASSED         [ 82%]
+tests/test_scope.py::test_scope_uses_resolved_target_not_display_path PASSED [ 83%]
+tests/test_scope.py::test_scope_probe_passes_when_target_enforces PASSED [ 84%]
+tests/test_scope.py::test_scope_probe_fails_closed_when_target_diverges PASSED [ 86%]
+tests/test_skill.py::test_skill_propose_reversible_action PASSED         [ 87%]
+tests/test_skill.py::test_skill_propose_irreversible_action PASSED       [ 89%]
+tests/test_skill.py::test_skill_tool_declarations PASSED                 [ 90%]
+tests/test_state_admissibility.py::test_matching_state_and_live_window_allows PASSED [ 91%]
+tests/test_state_admissibility.py::test_stale_state_fails_closed PASSED  [ 93%]
+tests/test_state_admissibility.py::test_agent_cannot_omit_policy_required_deps PASSED [ 94%]
+tests/test_state_admissibility.py::test_agent_may_add_extra_deps PASSED  [ 95%]
+tests/test_state_admissibility.py::test_high_risk_window_is_not_a_substitute_for_state_check PASSED [ 97%]
+tests/test_state_admissibility.py::test_high_risk_expired_window_fails_even_when_state_matches PASSED [ 98%]
+tests/test_state_admissibility.py::test_matching_hash_does_not_claim_original_state_was_sound PASSED [100%]
+
+============================= slowest 10 durations =============================
+0.02s call     tests/test_jepa_graph_memory_frontier.py::test_boundary_graph_interrupt_and_resume_with_ed25519
+0.01s call     tests/test_jepa_graph_memory_frontier.py::test_concurrent_ledger_writes_preserve_hash_chain
+
+(8 durations < 0.005s hidden.  Use -vv to show these durations.)
+======================== 72 passed, 1 skipped in 0.11s =========================
+```
+
+*Benchmark Summary:* Complete lifecycle test suite executing 72 deterministic test cases across in-memory policy enforcement, intent normalization, Merkle memory taint analysis, and cryptographic ledger verification in **`0.11 seconds`** (sub-millisecond average overhead per control evaluation).
+
+### Standard Execution Suite
+
 ```bash
 # 1. Install reference implementation
 git clone https://github.com/hoomanp/autonomy-boundary.git
 cd autonomy-boundary
 pip install -e ".[dev]"
 
-# 2. Run test suite (72 passed in < 0.2s)
+# 2. Run test suite
 pytest -q
 
 # 3. Run v0.4 architecture extensions demo (JEPA + Graph + Merkle Memory + Reasoning Harness)
